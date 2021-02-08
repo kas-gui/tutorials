@@ -1,7 +1,9 @@
 # Simple window
 
+![Simple window](screenshots/simple-window.png)
+
 Lets start by building a *really* simple UI, containing just an edit-box.
-(This is basically just a template.)
+(This is basically just a template. [Source](https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs).)
 
 ```rust
 use kas::widget::{EditBox, Window};
