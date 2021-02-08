@@ -156,6 +156,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#counter" id="counter">Counter</a></h1>
+<p><img src="screenshots/counter.png" alt="Counter" /></p>
 <p>This tutorial follows on from <a href="simple-window.html">simple window</a>, turning the example into a counter.</p>
 <p>To do this we simply add a button... or not quite so simply, since:</p>
 <ul>
@@ -164,7 +165,7 @@
 <li>placing multiple widgets next to each other requires a layout widget,
 which in this case also serves as our message handler</li>
 </ul>
-<p>I'll just give you our next code sample, then talk about it:</p>
+<p>I'll just give you our next code sample, then talk about it (<a href="https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs">source</a>):</p>
 <pre><pre class="playground"><code class="language-rust">use kas::class::HasString;
 use kas::event::{Manager, Response, VoidMsg};
 use kas::macros::make_widget;
