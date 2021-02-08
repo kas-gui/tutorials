@@ -1,5 +1,7 @@
 # Counter
 
+![Counter](screenshots/counter.png)
+
 This tutorial follows on from [simple window](simple-window.md), turning the example into a counter.
 
 To do this we simply add a button... or not quite so simply, since:
@@ -9,7 +11,7 @@ To do this we simply add a button... or not quite so simply, since:
 -   placing multiple widgets next to each other requires a layout widget,
     which in this case also serves as our message handler
 
-I'll just give you our next code sample, then talk about it:
+I'll just give you our next code sample, then talk about it ([source](https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs)):
 ```rust
 use kas::class::HasString;
 use kas::event::{Manager, Response, VoidMsg};
