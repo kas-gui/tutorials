@@ -25,3 +25,9 @@ jobs:
         run: |
           cargo fmt -- --check
           cargo test
+
+      - name: Counter
+        working-directory: ./examples/counter/
+        run: |
+          cargo fmt -- --check
+          cargo test
