@@ -1,0 +1,35 @@
+name: Test examples
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    name: Test examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt
+      - name: Install xcb libraries
+        run: sudo apt-get install -y libxcb-shape0-dev libxcb-xfixes0-dev
+
+      - name: Simple window
+        working-directory: ./examples/simple-window/
+        run: |
+          cargo fmt -- --check
+          cargo test
+
+      - name: Counter
+        working-directory: ./examples/counter/
+        run: |
+          cargo fmt -- --check
+          cargo test
