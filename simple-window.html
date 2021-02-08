@@ -3,10 +3,8 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title></title>
+        <title>Simple window - KAS tutorials</title>
         
-        
-        <base href="/">
         
 
 
@@ -91,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Intro</a></li><li class="chapter-item expanded "><a href="simple-window.html"><strong aria-hidden="true">2.</strong> Simple window</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Intro</a></li><li class="chapter-item expanded "><a href="simple-window.html" class="active"><strong aria-hidden="true">2.</strong> Simple window</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -157,15 +155,54 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#document-not-found-404" id="document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1><a class="header" href="#simple-window" id="simple-window">Simple window</a></h1>
+<p>Lets start by building a <em>really</em> simple UI, containing just an edit-box.
+(This is basically just a template.)</p>
+<pre><pre class="playground"><code class="language-rust">use kas::widget::{EditBox, Window};
+
+fn main() -&gt; Result&lt;(), kas_wgpu::Error&gt; {
+    env_logger::init();
+
+    let content = EditBox::new(&quot;0&quot;);
+    let window = Window::new(&quot;Simple window&quot;, content);
+
+    let theme = kas_theme::ShadedTheme::new();
+    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+}
+</code></pre></pre>
+<p>Hopefully that is clear enough? Let me explain anyway:</p>
+<ul>
+<li>our <code>main</code> function may fail with the <code>kas_wgpu::Error</code> type; <code>Toolkit::new</code>
+and <code>Toolkit::with</code> can fail (the <code>?</code> &quot;try&quot; operator)</li>
+<li>we initialise a logger, <a href="https://docs.rs/env_logger"><code>env_logger</code></a> (optional,
+but lets us get useful messages; try setting the environment variable
+<code>RUST_LOG=kas=info</code> or <code>trace</code> before running the example)</li>
+<li>we construct an <code>EditBox</code> and a <code>Window</code> around that</li>
+<li>we use the <code>ShadedTheme</code> (with default colours)</li>
+<li>we initialise the toolkit with our theme, add our window, and run it</li>
+</ul>
+<p>Note that <code>Toolkit::run</code> does not return. It is in fact a wrapper around
+<a href="https://docs.rs/winit/0.24.0/winit/event_loop/struct.EventLoop.html#method.run"><code>winit::event_loop::EventLoop::run</code></a>, which does not return.
+By default, the program will exit after all windows have closed.</p>
+<p>Also note that we only import our widgets into the module (<code>use kas::widget::{..}</code>),
+but don't import anything from the other crates: we use <a href="https://docs.rs/env_logger/0.8.2/env_logger/fn.init.html"><code>env_logger::init</code></a>,
+<a href="https://docs.rs/kas-theme/0.6.0/kas_theme/struct.ShadedTheme.html"><code>kas_theme::ShadedTheme</code></a> and <a href="https://docs.rs/kas-wgpu/0.6.0/kas_wgpu/struct.Toolkit.html"><code>kas_wgpu::Toolkit</code></a> directly since we don't need
+any other items from these crates.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="intro.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
+                        
+                            <a rel="next" href="counter.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
                         
 
                         <div style="clear: both"></div>
@@ -175,7 +212,15 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
+                    <a rel="prev" href="intro.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
 
+                
+                    <a rel="next" href="counter.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
                 
             </nav>
 
