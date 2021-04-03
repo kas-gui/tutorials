@@ -7,6 +7,7 @@ publish = false
 
 [dependencies]
 env_logger = "0.8"
-kas = "0.6"
-kas-theme = "0.6"
-kas-wgpu = "0.6"
+
+kas = "0.7"
+kas-theme = "0.7"
+kas-wgpu = "0.7"

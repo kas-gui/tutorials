@@ -2,16 +2,16 @@
 
 ![Simple window](screenshots/simple-window.png)
 
-Lets start by building a *really* simple UI, containing just an edit-box.
+Lets start by building a *really* simple UI, containing just a button.
 (This is basically just a template. [Source](https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs).)
 
 ```rust
-use kas::widget::{EditBox, Window};
+use kas::widget::{TextButton, Window};
 
 fn main() -> Result<(), kas_wgpu::Error> {
     env_logger::init();
 
-    let content = EditBox::new("0");
+    let content = TextButton::new("Push me");
     let window = Window::new("Simple window", content);
 
     let theme = kas_theme::ShadedTheme::new();
@@ -26,7 +26,7 @@ Hopefully that is clear enough? Let me explain anyway:
 -   we initialise a logger, [`env_logger`] (optional,
     but lets us get useful messages; try setting the environment variable
     `RUST_LOG=kas=info` or `trace` before running the example)
--   we construct an `EditBox` and a `Window` around that
+-   we construct a `TextButton` and a `Window` around that
 -   we use the `ShadedTheme` (with default colours)
 -   we initialise the toolkit with our theme, add our window, and run it
 
@@ -41,7 +41,7 @@ any other items from these crates.
 
 
 [`env_logger`]: https://docs.rs/env_logger
-[`winit::event_loop::EventLoop::run`]: https://docs.rs/winit/0.24.0/winit/event_loop/struct.EventLoop.html#method.run
-[`env_logger::init`]: https://docs.rs/env_logger/0.8.2/env_logger/fn.init.html
-[`kas_theme::ShadedTheme`]: https://docs.rs/kas-theme/0.6.0/kas_theme/struct.ShadedTheme.html
-[`kas_wgpu::Toolkit`]: https://docs.rs/kas-wgpu/0.6.0/kas_wgpu/struct.Toolkit.html
+[`winit::event_loop::EventLoop::run`]: https://docs.rs/winit/0.24/winit/event_loop/struct.EventLoop.html#method.run
+[`env_logger::init`]: https://docs.rs/env_logger/0.8/env_logger/fn.init.html
+[`kas_theme::ShadedTheme`]: https://docs.rs/kas-theme/latest/kas_theme/struct.ShadedTheme.html
+[`kas_wgpu::Toolkit`]: https://docs.rs/kas-wgpu/latest/kas_wgpu/struct.Toolkit.html

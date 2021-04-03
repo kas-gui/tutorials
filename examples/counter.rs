@@ -11,13 +11,13 @@ fn main() -> Result<(), kas_wgpu::Error> {
         #[handler(msg = VoidMsg)]
         struct {
             #[widget] display: impl HasString = EditBox::new("0").editable(false),
-            #[widget(handler = count)] _ = TextButton::new("count", ()),
+            #[widget(handler = count)] _ = TextButton::new_msg("count", ()),
             counter: u32 = 0,
         }
         impl {
             fn count(&mut self, mgr: &mut Manager, _: ()) -> Response<VoidMsg> {
                 self.counter += 1;
-                *mgr += self.display.set_string(self.counter.to_string());
+                *mgr |= self.display.set_string(self.counter.to_string());
                 Response::None
             }
         }
