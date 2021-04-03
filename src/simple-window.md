@@ -43,9 +43,51 @@ but don't import anything from the other crates: we use [`env_logger::init`],
 [`kas_theme::ShadedTheme`] and [`kas_wgpu::Toolkit`] directly since we don't need
 any other items from these crates.
 
+## Event handling
+
+You may have noticed that the button used above doesn't *do* anything. Lets fix
+that.
+
+If you look at the [`TextButton`] docs, you'll notice that it has an `on_push`
+method, allowing a closure to be set as a "push" event handler. This closure
+must have the following type:
+```
+F: Fn(&mut Manager<'_>) -> Option<M> + 'static
+```
+In other words, it takes a reference to the [`Manager`] and returns an optional
+*message* of type `M`. We'll come back to messages later; for now we can just
+return `None` — well, we could if type inference worked, but since `None` could
+be an option of any type we have to specify that we want `VoidMsg`:
+```rust
+let content = TextButton::new("Push me")
+    .on_push::<VoidMsg, _>(|_| {
+        println!("Hello!");
+        None
+    });
+```
+
+But let's not just print to the command-line: lets use the [`Manager`] to open
+a message dialog!
+```rust
+    let content = TextButton::new("&Push me")
+        .on_push::<VoidMsg, _>(|mgr| {
+            let mbox = MessageBox::new("Message", "You pushed the button.");
+            mgr.add_window(Box::new(mbox));
+            None
+        });
+```
+
+One final note: did you see we put an ampersand in `"&Push me"`? Try holding
+`Alt` and pressing `P` when you run the example:
+
+```sh
+cargo run --example simple-window-handler
+```
 
 [`env_logger`]: https://docs.rs/env_logger
 [`winit::event_loop::EventLoop::run`]: https://docs.rs/winit/0.24/winit/event_loop/struct.EventLoop.html#method.run
 [`env_logger::init`]: https://docs.rs/env_logger/0.8/env_logger/fn.init.html
 [`kas_theme::ShadedTheme`]: https://docs.rs/kas-theme/latest/kas_theme/struct.ShadedTheme.html
 [`kas_wgpu::Toolkit`]: https://docs.rs/kas-wgpu/latest/kas_wgpu/struct.Toolkit.html
+[`TextButton`]: https://docs.rs/kas/latest/kas/widget/struct.TextButton.html
+[`Manager`]: https://docs.rs/kas/latest/kas/event/struct.Manager.html

@@ -11,7 +11,7 @@ fn main() -> Result<(), kas_wgpu::Error> {
         #[handler(msg = VoidMsg)]
         struct {
             #[widget] display: impl HasString = EditBox::new("0").editable(false),
-            #[widget(handler = count)] _ = TextButton::new_msg("count", ()),
+            #[widget(handler = count)] _ = TextButton::new_msg("&count", ()),
             counter: u32 = 0,
         }
         impl {
