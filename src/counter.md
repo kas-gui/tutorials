@@ -44,6 +44,10 @@ fn main() -> Result<(), kas_wgpu::Error> {
 }
 ```
 
+```sh
+cargo run --example counter
+```
+
 Whoah... a lot just happened there right? Lets start with the little things:
 
 -   we set `.editable(false)` on our `EditBox` since it is for display only

@@ -19,6 +19,10 @@ fn main() -> Result<(), kas_wgpu::Error> {
 }
 ```
 
+```sh
+cargo run --example simple-window
+```
+
 Hopefully that is clear enough? Let me explain anyway:
 
 -   our `main` function may fail with the `kas_wgpu::Error` type; `Toolkit::new`
