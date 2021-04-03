@@ -1,5 +1,5 @@
 # Summary
 
 - [Intro](intro.md)
-- [Simple window](simple-window.md)
+- [Hello](hello.md)
 - [Counter](counter.md)

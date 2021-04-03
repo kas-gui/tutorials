@@ -29,6 +29,13 @@ Code samples are formatted using [rustfmt](https://github.com/rust-lang/rustfmt)
 
 All significant examples can be found as working apps in [the example directory](https://github.com/kas-gui/tutorials/tree/master/examples).
 
+To run the examples locally, check out the `tutorials` repository, then run e.g.:
+```sh
+git clone https://github.com/kas-gui/tutorials.git
+cd tutorials
+cargo run --example counter
+```
+
 ## Licence
 
 <p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><span property="dct:title">This tutorial, including text but excluding code samples, </span> is licensed under <a href="http://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-SA 4.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1"></a></p> 
