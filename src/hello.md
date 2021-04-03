@@ -59,22 +59,20 @@ In other words, it takes a reference to the [`Manager`] and returns an optional
 return `None` — well, we could if type inference worked, but since `None` could
 be an option of any type we have to specify that we want `VoidMsg`:
 ```rust
-let content = TextButton::new("Push me")
-    .on_push::<VoidMsg, _>(|_| {
-        println!("Hello!");
-        None
-    });
+let content = TextButton::new("Push me").on_push::<VoidMsg, _>(|_| {
+    println!("Hello!");
+    None
+});
 ```
 
 But let's not just print to the command-line: lets use the [`Manager`] to open
 a message dialog!
 ```rust
-    let content = TextButton::new("&Push me")
-        .on_push::<VoidMsg, _>(|mgr| {
-            let mbox = MessageBox::new("Message", "You pushed the button.");
-            mgr.add_window(Box::new(mbox));
-            None
-        });
+let content = TextButton::new("&Push me").on_push::<VoidMsg, _>(|mgr| {
+    let mbox = MessageBox::new("Message", "You pushed the button.");
+    mgr.add_window(Box::new(mbox));
+    None
+});
 ```
 
 One final note: did you see we put an ampersand in `"&Push me"`? Try holding
