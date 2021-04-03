@@ -17,11 +17,11 @@ If not, then [Learn Rust](https://www.rust-lang.org/learn)!
 It is also assumed that you have basic familiarity with [git](https://git-scm.com/) and
 basic command line tools, though these aren't a significant topic of the tutorials.
 
-We suggest using the latest stable Rust toolchain (or at least, a recent one) —
-[Install Rust](https://www.rust-lang.org/tools/install). Tutorials should use the
-latest stable release of [KAS](https://github.com/kas-gui/kas), and KAS often
-uses newly-stabilised Rust features. You can *probably* use beta or nightly Rust
-instead, if preferred.
+We suggest using the **beta** Rust toolchain — version 1.52.0 is required
+(currently beta). [Install Rust](https://www.rust-lang.org/tools/install).
+
+Tutorials use the latest stable release of [KAS](https://github.com/kas-gui/kas),
+currently v0.7.
 
 Code samples are formatted using [rustfmt](https://github.com/rust-lang/rustfmt).
 
