@@ -1,6 +1,6 @@
-# Simple window
+# Hello
 
-![Simple window](screenshots/simple-window.png)
+![Hello](screenshots/hello.png)
 
 Lets start by building a *really* simple UI, containing just a button.
 (This is basically just a template. [Source](https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs).)
@@ -12,7 +12,7 @@ fn main() -> Result<(), kas_wgpu::Error> {
     env_logger::init();
 
     let content = TextButton::new("Push me");
-    let window = Window::new("Simple window", content);
+    let window = Window::new("Hello", content);
 
     let theme = kas_theme::ShadedTheme::new();
     kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
@@ -20,7 +20,7 @@ fn main() -> Result<(), kas_wgpu::Error> {
 ```
 
 ```sh
-cargo run --example simple-window
+cargo run --example hello
 ```
 
 Hopefully that is clear enough? Let me explain anyway:
@@ -81,7 +81,7 @@ One final note: did you see we put an ampersand in `"&Push me"`? Try holding
 `Alt` and pressing `P` when you run the example:
 
 ```sh
-cargo run --example simple-window-handler
+cargo run --example hello-handler
 ```
 
 [`env_logger`]: https://docs.rs/env_logger

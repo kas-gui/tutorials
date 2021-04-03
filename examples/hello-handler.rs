@@ -10,7 +10,7 @@ fn main() -> Result<(), kas_wgpu::Error> {
             mgr.add_window(Box::new(mbox));
             None
         });
-    let window = Window::new("Simple window", content);
+    let window = Window::new("Hello", content);
 
     let theme = kas_theme::ShadedTheme::new();
     kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
