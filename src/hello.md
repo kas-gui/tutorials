@@ -1,9 +1,9 @@
-# Hello
+# Hello World!
 
 ![Hello](screenshots/hello.png)
 
-Lets start by building a *really* simple UI, containing just a button.
-(This is basically just a template. [Source](https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs).)
+Okay, that's not "hello world". Lets do something *slightly* more fun: a push button.
+[Source](https://github.com/kas-gui/tutorials/blob/master/examples/hello.rs).
 
 ```rust
 use kas::widget::{TextButton, Window};

@@ -13,16 +13,19 @@ or on the [tutorials issue tracker](https://github.com/kas-gui/tutorials/discuss
 
 It is assumed that you are already familiar with [the Rust language](https://www.rust-lang.org/).
 If not, then [Learn Rust](https://www.rust-lang.org/learn)!
+You are not expected to master Rust before learning KAS, but this tutorial
+series assumes a moderate understanding of the language.
 
 It is also assumed that you have basic familiarity with [git](https://git-scm.com/) and
 basic command line tools, though these aren't a significant topic of the tutorials.
 
-We suggest using the **beta** Rust toolchain — version 1.52.0 is required
-(currently beta). [Install Rust](https://www.rust-lang.org/tools/install).
+In general, it is suggested to use **nightly** Rust for development since this
+enables better macro diagnostics. Normally **stable** Rust can be used for
+release builds, however the current KAS version (0.7) requires Rust ≥ 1.52.0
+(still in **beta** at the time of writing).
 
 Tutorials use the latest stable release of [KAS](https://github.com/kas-gui/kas),
 currently v0.7.
-
 Code samples are formatted using [rustfmt](https://github.com/rust-lang/rustfmt).
 
 ## Examples
