@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Intro - KAS tutorials</title>
+        <title>Introduction - KAS tutorials</title>
         
         
 
@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html" class="active"><strong aria-hidden="true">1.</strong> Intro</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: derive(Widget)</a></li><li class="chapter-item expanded "><a href="counter2.html"><strong aria-hidden="true">4.</strong> Counter: messages</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">5.</strong> Calculator: make_widget and grid</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -164,14 +164,18 @@ and <a href="https://github.com/kas-gui/7guis/">7GUIs examples</a>.</p>
 or on the <a href="https://github.com/kas-gui/tutorials/discussions/1">tutorials issue tracker</a>.</p>
 <h2><a class="header" href="#requirements" id="requirements">Requirements</a></h2>
 <p>It is assumed that you are already familiar with <a href="https://www.rust-lang.org/">the Rust language</a>.
-If not, then <a href="https://www.rust-lang.org/learn">Learn Rust</a>!</p>
+If not, then <a href="https://www.rust-lang.org/learn">Learn Rust</a>!
+You are not expected to master Rust before learning KAS, but this tutorial
+series assumes a moderate understanding of the language.</p>
 <p>It is also assumed that you have basic familiarity with <a href="https://git-scm.com/">git</a> and
 basic command line tools, though these aren't a significant topic of the tutorials.</p>
-<p>We suggest using the <strong>beta</strong> Rust toolchain — version 1.52.0 is required
-(currently beta). <a href="https://www.rust-lang.org/tools/install">Install Rust</a>.</p>
+<p>In general, it is suggested to use <strong>nightly</strong> Rust for development since this
+enables better macro diagnostics. Normally <strong>stable</strong> Rust can be used for
+release builds, however the current KAS version (0.7) requires Rust ≥ 1.52.0
+(still in <strong>beta</strong> at the time of writing).</p>
 <p>Tutorials use the latest stable release of <a href="https://github.com/kas-gui/kas">KAS</a>,
-currently v0.7.</p>
-<p>Code samples are formatted using <a href="https://github.com/rust-lang/rustfmt">rustfmt</a>.</p>
+currently v0.7.
+Code samples are formatted using <a href="https://github.com/rust-lang/rustfmt">rustfmt</a>.</p>
 <h2><a class="header" href="#examples" id="examples">Examples</a></h2>
 <p>All significant examples can be found as working apps in <a href="https://github.com/kas-gui/tutorials/tree/master/examples">the example directory</a>.</p>
 <p>To run the examples locally, check out the <code>tutorials</code> repository, then run e.g.:</p>

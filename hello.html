@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Hello - KAS tutorials</title>
+        <title>Hello: push button - KAS tutorials</title>
         
         
 
@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Intro</a></li><li class="chapter-item expanded "><a href="hello.html" class="active"><strong aria-hidden="true">2.</strong> Hello</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html" class="active"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: derive(Widget)</a></li><li class="chapter-item expanded "><a href="counter2.html"><strong aria-hidden="true">4.</strong> Counter: messages</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">5.</strong> Calculator: make_widget and grid</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -155,10 +155,10 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#hello" id="hello">Hello</a></h1>
+                        <h1><a class="header" href="#hello-world" id="hello-world">Hello World!</a></h1>
 <p><img src="screenshots/hello.png" alt="Hello" /></p>
-<p>Lets start by building a <em>really</em> simple UI, containing just a button.
-(This is basically just a template. <a href="https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs">Source</a>.)</p>
+<p>Okay, that's not &quot;hello world&quot;. Lets do something <em>slightly</em> more fun: a push button.
+<a href="https://github.com/kas-gui/tutorials/blob/master/examples/hello.rs">Source</a>.</p>
 <pre><pre class="playground"><code class="language-rust">use kas::widget::{TextButton, Window};
 
 fn main() -&gt; Result&lt;(), kas_wgpu::Error&gt; {
