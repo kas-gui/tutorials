@@ -2,21 +2,20 @@
 
 ![Calculator](screenshots/calculator.png)
 
-This tutorial uses the tools and concepts introduced in the "counter" tutorial
-to build a basic calculator, including full key bindings, in under 200 lines.
-We also introduce a couple of new things:
+The previous tutorial built a custom widget with `derive(Widget)`, used
+`layout(column)` and used a message for event handling.
+This tutorial follows on from there, introducing the `make_widget!` macro, using
+`layout(grid)`, and some more message-based event handling.
 
--   the `grid` layout
--   putting actual data in our messages
--   the `make_widget!` macro
+We use this to build a simple but fully functional calculator, including the
+expected keyboard bindings, in under 200 lines of code.
 
 
 ## The make_widget macro
 
-If you thought having to derive a whole custom widget in the last tutorial just
-to put a button and label next to each other and write a simple handler, you're
-not alone. The `make_widget!` macro makes this easy-ish. It does have some
-rough edges.
+If you thought in the last tutorial that having to derive a whole custom widget
+just for simple layout and event handling was a bit much, you're not alone. The
+ `make_widget!` macro makes this much easier, but does have some rough edges.
 
 Looking back at our [`Counter` widget](counter.md#implementing-widget), there
 are a few things which are either "boring details of a widget" or redundant:
