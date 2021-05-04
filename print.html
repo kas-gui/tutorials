@@ -490,19 +490,16 @@ with a couple of additions:</p>
 </ul>
 <h1><a class="header" href="#calculator-make_widget-and-grid-layout" id="calculator-make_widget-and-grid-layout">Calculator: make_widget and grid layout</a></h1>
 <p><img src="screenshots/calculator.png" alt="Calculator" /></p>
-<p>This tutorial uses the tools and concepts introduced in the &quot;counter&quot; tutorial
-to build a basic calculator, including full key bindings, in under 200 lines.
-We also introduce a couple of new things:</p>
-<ul>
-<li>the <code>grid</code> layout</li>
-<li>putting actual data in our messages</li>
-<li>the <code>make_widget!</code> macro</li>
-</ul>
+<p>The previous tutorial built a custom widget with <code>derive(Widget)</code>, used
+<code>layout(column)</code> and used a message for event handling.
+This tutorial follows on from there, introducing the <code>make_widget!</code> macro, using
+<code>layout(grid)</code>, and some more message-based event handling.</p>
+<p>We use this to build a simple but fully functional calculator, including the
+expected keyboard bindings, in under 200 lines of code.</p>
 <h2><a class="header" href="#the-make_widget-macro" id="the-make_widget-macro">The make_widget macro</a></h2>
-<p>If you thought having to derive a whole custom widget in the last tutorial just
-to put a button and label next to each other and write a simple handler, you're
-not alone. The <code>make_widget!</code> macro makes this easy-ish. It does have some
-rough edges.</p>
+<p>If you thought in the last tutorial that having to derive a whole custom widget
+just for simple layout and event handling was a bit much, you're not alone. The
+<code>make_widget!</code> macro makes this much easier, but does have some rough edges.</p>
 <p>Looking back at our <a href="counter.html#implementing-widget"><code>Counter</code> widget</a>, there
 are a few things which are either &quot;boring details of a widget&quot; or redundant:</p>
 <ul>
