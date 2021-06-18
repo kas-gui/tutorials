@@ -20,12 +20,10 @@ It is also assumed that you have basic familiarity with [git](https://git-scm.co
 basic command line tools, though these aren't a significant topic of the tutorials.
 
 In general, it is suggested to use **nightly** Rust for development since this
-enables better macro diagnostics. Normally **stable** Rust can be used for
-release builds, however the current KAS version (0.7) requires Rust ≥ 1.52.0
-(still in **beta** at the time of writing).
+enables better macro diagnostics. **Stable** Rust can be used for release builds.
 
 Tutorials use the latest stable release of [KAS](https://github.com/kas-gui/kas),
-currently v0.7.
+currently v0.8.
 Code samples are formatted using [rustfmt](https://github.com/rust-lang/rustfmt).
 
 ## Examples
