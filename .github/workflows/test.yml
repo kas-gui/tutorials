@@ -19,8 +19,8 @@ jobs:
           toolchain: beta
           override: true
           components: rustfmt
-      - name: Install xcb libraries
-        run: sudo apt-get install -y libxcb-shape0-dev libxcb-xfixes0-dev
+      - name: Install dependencies
+        run: sudo apt-get install -y libxkbcommon-dev libxcb-shape0-dev libxcb-xfixes0-dev
       - name: Test
         run: |
           cargo fmt -- --check
