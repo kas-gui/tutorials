@@ -6,8 +6,8 @@ edition = "2018"
 publish = false
 
 [dependencies]
-env_logger = "0.8"
+env_logger = "0.9"
 
-kas = "0.8"
-kas-theme = "0.8"
-kas-wgpu = "0.8"
+kas = "0.9.1"
+kas-theme = "0.9"
+kas-wgpu = "0.9"
