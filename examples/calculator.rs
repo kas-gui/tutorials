@@ -5,7 +5,7 @@ use kas::class::HasString;
 use kas::event::VirtualKeyCode as VK;
 use kas::event::{Manager, Response, VoidMsg};
 use kas::macros::{make_widget, VoidMsg};
-use kas::widget::{EditBox, TextButton, Window};
+use kas::widgets::{EditBox, TextButton, Window};
 
 #[derive(Clone, Debug, VoidMsg)]
 enum Key {
@@ -18,7 +18,7 @@ enum Key {
     Char(char),
 }
 
-fn main() -> Result<(), kas_wgpu::Error> {
+fn main() -> Result<(), kas::shell::Error> {
     env_logger::init();
 
     let buttons = make_widget! {
@@ -40,7 +40,7 @@ fn main() -> Result<(), kas_wgpu::Error> {
             _ = TextButton::new_msg("&8", Key::Char('8')),
             #[widget(col = 2, row = 1)]
             _ = TextButton::new_msg("&9", Key::Char('9')),
-            #[widget(col = 3, row = 1, rspan = 2)]
+            #[widget(col = 3, row = 1, rspan = 2, align = stretch)]
             _ = TextButton::new_msg("&+", Key::Add),
             #[widget(col = 0, row = 2)]
             _ = TextButton::new_msg("&4", Key::Char('4')),
@@ -54,7 +54,7 @@ fn main() -> Result<(), kas_wgpu::Error> {
             _ = TextButton::new_msg("&2", Key::Char('2')),
             #[widget(col = 2, row = 3)]
             _ = TextButton::new_msg("&3", Key::Char('3')),
-            #[widget(col = 3, row = 3, rspan = 2)]
+            #[widget(col = 3, row = 3, rspan = 2, align = stretch)]
             _ = TextButton::new_msg("&=", Key::Equals).with_keys(&[VK::Return, VK::NumpadEnter]),
             #[widget(col = 0, row = 4, cspan = 2)]
             _ = TextButton::new_msg("&0", Key::Char('0')),
@@ -87,8 +87,8 @@ fn main() -> Result<(), kas_wgpu::Error> {
     };
     let window = Window::new("Calculator", content);
 
-    let theme = kas_theme::ShadedTheme::new().with_font_size(16.0);
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas::theme::FlatTheme::new().with_font_size(16.0);
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

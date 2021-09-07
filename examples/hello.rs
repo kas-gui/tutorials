@@ -1,11 +1,11 @@
-use kas::widget::{TextButton, Window};
+use kas::widgets::{TextButton, Window};
 
-fn main() -> Result<(), kas_wgpu::Error> {
+fn main() -> Result<(), kas::shell::Error> {
     env_logger::init();
 
     let content = TextButton::new("Push me");
     let window = Window::new("Hello", content);
 
-    let theme = kas_theme::ShadedTheme::new();
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas::theme::FlatTheme::new();
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }

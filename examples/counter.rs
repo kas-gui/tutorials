@@ -1,7 +1,7 @@
 use kas::class::HasString;
 use kas::event::{Manager, Response, VoidMsg};
 use kas::macros::Widget;
-use kas::widget::{Label, TextButton, Window};
+use kas::widgets::{Label, TextButton, Window};
 
 #[derive(Debug, Widget)]
 #[layout(column)]
@@ -39,11 +39,11 @@ impl Counter {
     }
 }
 
-fn main() -> Result<(), kas_wgpu::Error> {
+fn main() -> Result<(), kas::shell::Error> {
     env_logger::init();
 
     let window = Window::new("Counter", Counter::new());
 
-    let theme = kas_theme::ShadedTheme::new();
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas::theme::ShadedTheme::new();
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }

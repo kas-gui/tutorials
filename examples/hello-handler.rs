@@ -1,7 +1,7 @@
 use kas::event::VoidMsg;
-use kas::widget::{MessageBox, TextButton, Window};
+use kas::widgets::{MessageBox, TextButton, Window};
 
-fn main() -> Result<(), kas_wgpu::Error> {
+fn main() -> Result<(), kas::shell::Error> {
     env_logger::init();
 
     let content = TextButton::new("&Push me").on_push::<VoidMsg, _>(|mgr| {
@@ -11,6 +11,6 @@ fn main() -> Result<(), kas_wgpu::Error> {
     });
     let window = Window::new("Hello", content);
 
-    let theme = kas_theme::ShadedTheme::new();
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas::theme::ShadedTheme::new();
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }

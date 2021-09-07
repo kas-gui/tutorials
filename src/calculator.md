@@ -56,7 +56,7 @@ let buttons = make_widget! {
         _ = TextButton::new_msg("&8", Key::Char('8')),
         #[widget(col = 2, row = 1)]
         _ = TextButton::new_msg("&9", Key::Char('9')),
-        #[widget(col = 3, row = 1, rspan = 2)]
+        #[widget(col = 3, row = 1, rspan = 2, align = stretch)]
         _ = TextButton::new_msg("&+", Key::Add),
         #[widget(col = 0, row = 2)]
         _ = TextButton::new_msg("&4", Key::Char('4')),
@@ -70,7 +70,7 @@ let buttons = make_widget! {
         _ = TextButton::new_msg("&2", Key::Char('2')),
         #[widget(col = 2, row = 3)]
         _ = TextButton::new_msg("&3", Key::Char('3')),
-        #[widget(col = 3, row = 3, rspan = 2)]
+        #[widget(col = 3, row = 3, rspan = 2, align = stretch)]
         _ = TextButton::new_msg("&=", Key::Equals).with_keys(&[VK::Return, VK::NumpadEnter]),
         #[widget(col = 0, row = 4, cspan = 2)]
         _ = TextButton::new_msg("&0", Key::Char('0')),
@@ -88,9 +88,13 @@ let buttons = make_widget! {
 
 Here, you see, we didn't need to use `#[derive(Debug, Widget)]` since the
 `make_widget` macro does it for us. We also didn't need to mention the core or
-layout-data fields. We didn't bother naming those buttons or even explicitly
-typing them (naming and typing are optional). Also notice that the `struct` type
-is unnamed, and similarly the following `impl` block doesn't name type.
+layout-data fields. None of the buttons are named (`_` is used instead) or typed
+since we never refer to them again and the type can be inferred.
+Also notice that the `struct` type is unnamed, and similarly the following
+`impl` block doesn't name type: `make_widget` creates an anonymous struct.
+(Since this is all implemented in macros and Rust does not natively support
+anonymous items or untyped struct fields, implementation details may sometimes
+slip through, especially in error messages.)
 
 #### Grid layout
 
@@ -146,7 +150,7 @@ do this.
 
 Now, lets put our buttons in a calculator:
 ```rust
-fn main() -> Result<(), kas_wgpu::Error> {
+fn main() -> Result<(), kas::shell::Error> {
     env_logger::init();
 
     let buttons = /* snip */;
@@ -169,8 +173,8 @@ fn main() -> Result<(), kas_wgpu::Error> {
     };
     let window = Window::new("Calculator", content);
 
-    let theme = kas_theme::ShadedTheme::new().with_font_size(16.0);
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas_theme::FlatTheme::new().with_font_size(16.0);
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }
 ```
 By now, most of this code should be clear enough, but a few things are worth
