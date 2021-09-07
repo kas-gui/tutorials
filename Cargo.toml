@@ -3,11 +3,10 @@ name = "KAS-tutorials"
 version = "0.1.0"
 authors = ["Diggory Hardy <git@dhardy.name>"]
 edition = "2018"
+resolver = "2"
 publish = false
 
 [dependencies]
 env_logger = "0.9"
 
-kas = "0.9.1"
-kas-theme = "0.9"
-kas-wgpu = "0.9"
+kas = "0.10.1"

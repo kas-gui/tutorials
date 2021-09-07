@@ -38,7 +38,7 @@ explicitly. Instead, the `derive(Widget)` macro must be used, as in this example
 ```rust
 use kas::event::VoidMsg;
 use kas::macros::Widget;
-use kas::widget::{Label, TextButton};
+use kas::widgets::{Label, TextButton};
 
 #[derive(Debug, Widget)]
 #[layout(column)]

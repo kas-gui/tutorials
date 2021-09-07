@@ -23,7 +23,7 @@ In general, it is suggested to use **nightly** Rust for development since this
 enables better macro diagnostics. **Stable** Rust can be used for release builds.
 
 Tutorials use the latest stable release of [KAS](https://github.com/kas-gui/kas),
-currently v0.9.
+currently v0.10.
 Code samples are formatted using [rustfmt](https://github.com/rust-lang/rustfmt).
 
 ## Examples
