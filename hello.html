@@ -159,38 +159,38 @@
 <p><img src="screenshots/hello.png" alt="Hello" /></p>
 <p>Okay, that's not &quot;hello world&quot;. Lets do something <em>slightly</em> more fun: a push button.
 <a href="https://github.com/kas-gui/tutorials/blob/master/examples/hello.rs">Source</a>.</p>
-<pre><pre class="playground"><code class="language-rust">use kas::widget::{TextButton, Window};
+<pre><pre class="playground"><code class="language-rust">use kas::widgets::{TextButton, Window};
 
-fn main() -&gt; Result&lt;(), kas_wgpu::Error&gt; {
+fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
     env_logger::init();
 
     let content = TextButton::new(&quot;Push me&quot;);
     let window = Window::new(&quot;Hello&quot;, content);
 
-    let theme = kas_theme::ShadedTheme::new();
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas::theme::FlatTheme::new();
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }
 </code></pre></pre>
 <pre><code class="language-sh">cargo run --example hello
 </code></pre>
 <p>Hopefully that is clear enough? Let me explain anyway:</p>
 <ul>
-<li>our <code>main</code> function may fail with the <code>kas_wgpu::Error</code> type; <code>Toolkit::new</code>
+<li>our <code>main</code> function may fail with the <code>kas::shell::Error</code> type; <code>Toolkit::new</code>
 and <code>Toolkit::with</code> can fail (the <code>?</code> &quot;try&quot; operator)</li>
 <li>we initialise a logger, <a href="https://docs.rs/env_logger"><code>env_logger</code></a> (optional,
 but lets us get useful messages; try setting the environment variable
 <code>RUST_LOG=kas=info</code> or <code>trace</code> before running the example)</li>
 <li>we construct a <code>TextButton</code> and a <code>Window</code> around that</li>
-<li>we use the <code>ShadedTheme</code> (with default colours)</li>
+<li>we use the <code>FlatTheme</code> (with default colours)</li>
 <li>we initialise the toolkit with our theme, add our window, and run it</li>
 </ul>
 <p>Note that <code>Toolkit::run</code> does not return. It is in fact a wrapper around
 <a href="https://docs.rs/winit/0.24/winit/event_loop/struct.EventLoop.html#method.run"><code>winit::event_loop::EventLoop::run</code></a>, which does not return.
 By default, the program will exit after all windows have closed.</p>
-<p>Also note that we only import our widgets into the module (<code>use kas::widget::{..}</code>),
-but don't import anything from the other crates: we use <a href="https://docs.rs/env_logger/0.8/env_logger/fn.init.html"><code>env_logger::init</code></a>,
-<a href="https://docs.rs/kas-theme/latest/kas_theme/struct.ShadedTheme.html"><code>kas_theme::ShadedTheme</code></a> and <a href="https://docs.rs/kas-wgpu/latest/kas_wgpu/struct.Toolkit.html"><code>kas_wgpu::Toolkit</code></a> directly since we don't need
-any other items from these crates.</p>
+<p>Also note that <code>kas</code> is mostly just a wrapper crate. We <em>could</em> instead import
+widgets from <code>kas_widgets</code>, the theme from <code>kas_theme</code> and <code>Toolkit</code> from
+<code>kas_wgpu</code>. We <em>could</em> even write our own theme and/or shell instead of using
+<code>kas_theme</code> and/or <code>kas_wgpu</code>, though we have little reason to.</p>
 <h2><a class="header" href="#event-handling" id="event-handling">Event handling</a></h2>
 <p>You may have noticed that the button used above doesn't <em>do</em> anything. Lets fix
 that.</p>

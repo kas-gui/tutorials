@@ -174,7 +174,7 @@ basic command line tools, though these aren't a significant topic of the tutoria
 <p>In general, it is suggested to use <strong>nightly</strong> Rust for development since this
 enables better macro diagnostics. <strong>Stable</strong> Rust can be used for release builds.</p>
 <p>Tutorials use the latest stable release of <a href="https://github.com/kas-gui/kas">KAS</a>,
-currently v0.9.
+currently v0.10.
 Code samples are formatted using <a href="https://github.com/rust-lang/rustfmt">rustfmt</a>.</p>
 <h2><a class="header" href="#examples" id="examples">Examples</a></h2>
 <p>All significant examples can be found as working apps in <a href="https://github.com/kas-gui/tutorials/tree/master/examples">the example directory</a>.</p>
@@ -190,38 +190,38 @@ cargo run --example counter
 <p><img src="screenshots/hello.png" alt="Hello" /></p>
 <p>Okay, that's not &quot;hello world&quot;. Lets do something <em>slightly</em> more fun: a push button.
 <a href="https://github.com/kas-gui/tutorials/blob/master/examples/hello.rs">Source</a>.</p>
-<pre><pre class="playground"><code class="language-rust">use kas::widget::{TextButton, Window};
+<pre><pre class="playground"><code class="language-rust">use kas::widgets::{TextButton, Window};
 
-fn main() -&gt; Result&lt;(), kas_wgpu::Error&gt; {
+fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
     env_logger::init();
 
     let content = TextButton::new(&quot;Push me&quot;);
     let window = Window::new(&quot;Hello&quot;, content);
 
-    let theme = kas_theme::ShadedTheme::new();
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas::theme::FlatTheme::new();
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }
 </code></pre></pre>
 <pre><code class="language-sh">cargo run --example hello
 </code></pre>
 <p>Hopefully that is clear enough? Let me explain anyway:</p>
 <ul>
-<li>our <code>main</code> function may fail with the <code>kas_wgpu::Error</code> type; <code>Toolkit::new</code>
+<li>our <code>main</code> function may fail with the <code>kas::shell::Error</code> type; <code>Toolkit::new</code>
 and <code>Toolkit::with</code> can fail (the <code>?</code> &quot;try&quot; operator)</li>
 <li>we initialise a logger, <a href="https://docs.rs/env_logger"><code>env_logger</code></a> (optional,
 but lets us get useful messages; try setting the environment variable
 <code>RUST_LOG=kas=info</code> or <code>trace</code> before running the example)</li>
 <li>we construct a <code>TextButton</code> and a <code>Window</code> around that</li>
-<li>we use the <code>ShadedTheme</code> (with default colours)</li>
+<li>we use the <code>FlatTheme</code> (with default colours)</li>
 <li>we initialise the toolkit with our theme, add our window, and run it</li>
 </ul>
 <p>Note that <code>Toolkit::run</code> does not return. It is in fact a wrapper around
 <a href="https://docs.rs/winit/0.24/winit/event_loop/struct.EventLoop.html#method.run"><code>winit::event_loop::EventLoop::run</code></a>, which does not return.
 By default, the program will exit after all windows have closed.</p>
-<p>Also note that we only import our widgets into the module (<code>use kas::widget::{..}</code>),
-but don't import anything from the other crates: we use <a href="https://docs.rs/env_logger/0.8/env_logger/fn.init.html"><code>env_logger::init</code></a>,
-<a href="https://docs.rs/kas-theme/latest/kas_theme/struct.ShadedTheme.html"><code>kas_theme::ShadedTheme</code></a> and <a href="https://docs.rs/kas-wgpu/latest/kas_wgpu/struct.Toolkit.html"><code>kas_wgpu::Toolkit</code></a> directly since we don't need
-any other items from these crates.</p>
+<p>Also note that <code>kas</code> is mostly just a wrapper crate. We <em>could</em> instead import
+widgets from <code>kas_widgets</code>, the theme from <code>kas_theme</code> and <code>Toolkit</code> from
+<code>kas_wgpu</code>. We <em>could</em> even write our own theme and/or shell instead of using
+<code>kas_theme</code> and/or <code>kas_wgpu</code>, though we have little reason to.</p>
 <h2><a class="header" href="#event-handling" id="event-handling">Event handling</a></h2>
 <p>You may have noticed that the button used above doesn't <em>do</em> anything. Lets fix
 that.</p>
@@ -292,7 +292,7 @@ explicitly. Instead, the <code>derive(Widget)</code> macro must be used, as in t
 </span><span class="boring">fn main() {
 </span>use kas::event::VoidMsg;
 use kas::macros::Widget;
-use kas::widget::{Label, TextButton};
+use kas::widgets::{Label, TextButton};
 
 #[derive(Debug, Widget)]
 #[layout(column)]
@@ -536,7 +536,7 @@ generics, and that has its rough edges (including atrocious error messages).</p>
         _ = TextButton::new_msg(&quot;&amp;8&quot;, Key::Char('8')),
         #[widget(col = 2, row = 1)]
         _ = TextButton::new_msg(&quot;&amp;9&quot;, Key::Char('9')),
-        #[widget(col = 3, row = 1, rspan = 2)]
+        #[widget(col = 3, row = 1, rspan = 2, align = stretch)]
         _ = TextButton::new_msg(&quot;&amp;+&quot;, Key::Add),
         #[widget(col = 0, row = 2)]
         _ = TextButton::new_msg(&quot;&amp;4&quot;, Key::Char('4')),
@@ -550,7 +550,7 @@ generics, and that has its rough edges (including atrocious error messages).</p>
         _ = TextButton::new_msg(&quot;&amp;2&quot;, Key::Char('2')),
         #[widget(col = 2, row = 3)]
         _ = TextButton::new_msg(&quot;&amp;3&quot;, Key::Char('3')),
-        #[widget(col = 3, row = 3, rspan = 2)]
+        #[widget(col = 3, row = 3, rspan = 2, align = stretch)]
         _ = TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals).with_keys(&amp;[VK::Return, VK::NumpadEnter]),
         #[widget(col = 0, row = 4, cspan = 2)]
         _ = TextButton::new_msg(&quot;&amp;0&quot;, Key::Char('0')),
@@ -568,9 +568,13 @@ generics, and that has its rough edges (including atrocious error messages).</p>
 </span></code></pre></pre>
 <p>Here, you see, we didn't need to use <code>#[derive(Debug, Widget)]</code> since the
 <code>make_widget</code> macro does it for us. We also didn't need to mention the core or
-layout-data fields. We didn't bother naming those buttons or even explicitly
-typing them (naming and typing are optional). Also notice that the <code>struct</code> type
-is unnamed, and similarly the following <code>impl</code> block doesn't name type.</p>
+layout-data fields. None of the buttons are named (<code>_</code> is used instead) or typed
+since we never refer to them again and the type can be inferred.
+Also notice that the <code>struct</code> type is unnamed, and similarly the following
+<code>impl</code> block doesn't name type: <code>make_widget</code> creates an anonymous struct.
+(Since this is all implemented in macros and Rust does not natively support
+anonymous items or untyped struct fields, implementation details may sometimes
+slip through, especially in error messages.)</p>
 <h4><a class="header" href="#grid-layout" id="grid-layout">Grid layout</a></h4>
 <p>This is pretty simple to use: <code>#[layout(grid)]</code>, and specify <code>col</code> and <code>row</code> in
 the <code>#[widget]</code> attribute. The number of rows and columns is auto-detected.
@@ -616,7 +620,7 @@ macro which implements <code>From&lt;VoidMsg&gt;</code> for the type. All messag
 do this.</p>
 <h2><a class="header" href="#building-our-calculator" id="building-our-calculator">Building our calculator</a></h2>
 <p>Now, lets put our buttons in a calculator:</p>
-<pre><pre class="playground"><code class="language-rust">fn main() -&gt; Result&lt;(), kas_wgpu::Error&gt; {
+<pre><pre class="playground"><code class="language-rust">fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
     env_logger::init();
 
     let buttons = /* snip */;
@@ -639,8 +643,8 @@ do this.</p>
     };
     let window = Window::new(&quot;Calculator&quot;, content);
 
-    let theme = kas_theme::ShadedTheme::new().with_font_size(16.0);
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas_theme::FlatTheme::new().with_font_size(16.0);
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }
 </code></pre></pre>
 <p>By now, most of this code should be clear enough, but a few things are worth

@@ -205,7 +205,7 @@ generics, and that has its rough edges (including atrocious error messages).</p>
         _ = TextButton::new_msg(&quot;&amp;8&quot;, Key::Char('8')),
         #[widget(col = 2, row = 1)]
         _ = TextButton::new_msg(&quot;&amp;9&quot;, Key::Char('9')),
-        #[widget(col = 3, row = 1, rspan = 2)]
+        #[widget(col = 3, row = 1, rspan = 2, align = stretch)]
         _ = TextButton::new_msg(&quot;&amp;+&quot;, Key::Add),
         #[widget(col = 0, row = 2)]
         _ = TextButton::new_msg(&quot;&amp;4&quot;, Key::Char('4')),
@@ -219,7 +219,7 @@ generics, and that has its rough edges (including atrocious error messages).</p>
         _ = TextButton::new_msg(&quot;&amp;2&quot;, Key::Char('2')),
         #[widget(col = 2, row = 3)]
         _ = TextButton::new_msg(&quot;&amp;3&quot;, Key::Char('3')),
-        #[widget(col = 3, row = 3, rspan = 2)]
+        #[widget(col = 3, row = 3, rspan = 2, align = stretch)]
         _ = TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals).with_keys(&amp;[VK::Return, VK::NumpadEnter]),
         #[widget(col = 0, row = 4, cspan = 2)]
         _ = TextButton::new_msg(&quot;&amp;0&quot;, Key::Char('0')),
@@ -237,9 +237,13 @@ generics, and that has its rough edges (including atrocious error messages).</p>
 </span></code></pre></pre>
 <p>Here, you see, we didn't need to use <code>#[derive(Debug, Widget)]</code> since the
 <code>make_widget</code> macro does it for us. We also didn't need to mention the core or
-layout-data fields. We didn't bother naming those buttons or even explicitly
-typing them (naming and typing are optional). Also notice that the <code>struct</code> type
-is unnamed, and similarly the following <code>impl</code> block doesn't name type.</p>
+layout-data fields. None of the buttons are named (<code>_</code> is used instead) or typed
+since we never refer to them again and the type can be inferred.
+Also notice that the <code>struct</code> type is unnamed, and similarly the following
+<code>impl</code> block doesn't name type: <code>make_widget</code> creates an anonymous struct.
+(Since this is all implemented in macros and Rust does not natively support
+anonymous items or untyped struct fields, implementation details may sometimes
+slip through, especially in error messages.)</p>
 <h4><a class="header" href="#grid-layout" id="grid-layout">Grid layout</a></h4>
 <p>This is pretty simple to use: <code>#[layout(grid)]</code>, and specify <code>col</code> and <code>row</code> in
 the <code>#[widget]</code> attribute. The number of rows and columns is auto-detected.
@@ -285,7 +289,7 @@ macro which implements <code>From&lt;VoidMsg&gt;</code> for the type. All messag
 do this.</p>
 <h2><a class="header" href="#building-our-calculator" id="building-our-calculator">Building our calculator</a></h2>
 <p>Now, lets put our buttons in a calculator:</p>
-<pre><pre class="playground"><code class="language-rust">fn main() -&gt; Result&lt;(), kas_wgpu::Error&gt; {
+<pre><pre class="playground"><code class="language-rust">fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
     env_logger::init();
 
     let buttons = /* snip */;
@@ -308,8 +312,8 @@ do this.</p>
     };
     let window = Window::new(&quot;Calculator&quot;, content);
 
-    let theme = kas_theme::ShadedTheme::new().with_font_size(16.0);
-    kas_wgpu::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas_theme::FlatTheme::new().with_font_size(16.0);
+    kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }
 </code></pre></pre>
 <p>By now, most of this code should be clear enough, but a few things are worth
