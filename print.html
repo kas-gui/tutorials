@@ -228,7 +228,7 @@ that.</p>
 <p>If you look at the <a href="https://docs.rs/kas/latest/kas/widget/struct.TextButton.html"><code>TextButton</code></a> docs, you'll notice that it has an <code>on_push</code>
 method, allowing a closure to be set as a &quot;push&quot; event handler. This closure
 must have the following type:</p>
-<pre><code>F: Fn(&amp;mut Manager&lt;'_&gt;) -&gt; Option&lt;M&gt; + 'static
+<pre><code class="language-ignore">F: Fn(&amp;mut Manager&lt;'_&gt;) -&gt; Option&lt;M&gt; + 'static
 </code></pre>
 <p>In other words, it takes a reference to the <a href="https://docs.rs/kas/latest/kas/event/struct.Manager.html"><code>Manager</code></a> and returns an optional
 <em>message</em> of type <code>M</code>. We'll come back to messages later; for now we can just
@@ -237,6 +237,8 @@ be an option of any type we have to specify that we want <code>VoidMsg</code>:</
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::TextButton;
 </span>let content = TextButton::new(&quot;Push me&quot;).on_push::&lt;VoidMsg, _&gt;(|_| {
     println!(&quot;Hello!&quot;);
     None
@@ -248,6 +250,8 @@ a message dialog!</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{MessageBox, TextButton};
 </span>let content = TextButton::new(&quot;&amp;Push me&quot;).on_push::&lt;VoidMsg, _&gt;(|mgr| {
     let mbox = MessageBox::new(&quot;Message&quot;, &quot;You pushed the button.&quot;);
     mgr.add_window(Box::new(mbox));
@@ -412,28 +416,35 @@ cannot write a generic implementation. Thus for now we must implement
 <p>To implement our event handling, we'll have our <a href="https://docs.rs/kas/latest/kas/widget/struct.TextButton.html"><code>TextButton</code></a> produce a
 message. Since the message doesn't need to include an identifier or any data,
 we'll just use <code>()</code> as the message type:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>            button: TextButton::new_msg(&quot;&amp;count&quot;, ()),
-<span class="boring">}
-</span></code></pre></pre>
+<pre><code class="language-ignore">            button: TextButton::new_msg(&quot;&amp;count&quot;, ()),
+</code></pre>
 <p>Note that our <code>Counter</code> has message type <a href="https://docs.rs/kas/latest/kas/event/enum.VoidMsg.html"><code>VoidMsg</code></a> and <code>()</code> is <em>not</em>
 convertible to <a href="https://docs.rs/kas/latest/kas/event/enum.VoidMsg.html"><code>VoidMsg</code></a>, thus if we use <code>TextButton&lt;()&gt;</code> in <code>Counter</code>
 without a handler we'll get a compile error.</p>
 <p>To write our handler, we just use an ordinary method and declare it within the
 <code>#[widget]</code> attribute:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>    #[widget(handler = increment)]
+<pre><code class="language-ignore">    #[widget(handler = increment)]
     button: TextButton&lt;()&gt;,
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <p>and:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{Label, TextButton};
+</span><span class="boring">#[derive(Debug, Widget)]
+</span><span class="boring">#[layout(column)]
+</span><span class="boring">struct Counter {
+</span><span class="boring">   #[widget_core]
+</span><span class="boring">   core: kas::CoreData,
+</span><span class="boring">   #[layout_data]
+</span><span class="boring">   layout_data: &lt;Self as kas::LayoutData&gt;::Data,
+</span><span class="boring">   #[widget(halign = centre)]
+</span><span class="boring">   display: Label&lt;String&gt;,
+</span><span class="boring">   #[widget]
+</span><span class="boring">   button: TextButton&lt;VoidMsg&gt;,
+</span><span class="boring">   counter: u32,
+</span><span class="boring">}
 </span>impl Counter {
     fn increment(&amp;mut self, mgr: &amp;mut Manager, _: ()) -&gt; Response&lt;VoidMsg&gt; {
         self.counter += 1;
@@ -444,12 +455,8 @@ without a handler we'll get a compile error.</p>
 <span class="boring">}
 </span></code></pre></pre>
 <p>The prototype for this message is fixed:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>fn handler(&amp;mut self, mgr: &amp;mut Manager, msg: M) -&gt; Response&lt;N&gt;
-<span class="boring">}
-</span></code></pre></pre>
+<pre><code class="language-ignore">fn handler(&amp;mut self, mgr: &amp;mut Manager, msg: M) -&gt; Response&lt;N&gt;
+</code></pre>
 <p>where <code>M</code> and <code>N</code> are the child's and parent's message types respectively.
 We've already seen <a href="https://docs.rs/kas/latest/kas/event/struct.Manager.html"><code>event::Manager</code></a>; <a href="https://docs.rs/kas/latest/kas/event/enum.Response.html"><code>Response</code></a> is just an extended
 version of <a href="https://doc.rust-lang.org/std/option/enum.Option.html"><code>Option</code></a>.</p>
@@ -517,6 +524,20 @@ generics, and that has its rough edges (including atrocious error messages).</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span>use kas::prelude::*;
+use kas::widgets::TextButton;
+use kas::event::VirtualKeyCode as VK;
+
+<span class="boring">#[derive(Clone, Debug, VoidMsg)]
+</span><span class="boring">enum Key {
+</span><span class="boring">   Clear,
+</span><span class="boring">   Divide,
+</span><span class="boring">   Multiply,
+</span><span class="boring">   Subtract,
+</span><span class="boring">   Add,
+</span><span class="boring">   Equals,
+</span><span class="boring">   Char(char),
+</span><span class="boring">}
 </span>let buttons = make_widget! {
     #[layout(grid)]
     #[handler(msg = Key)]
@@ -603,6 +624,7 @@ and define this:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
 </span>#[derive(Clone, Debug, VoidMsg)]
 enum Key {
     Clear,
@@ -620,10 +642,78 @@ macro which implements <code>From&lt;VoidMsg&gt;</code> for the type. All messag
 do this.</p>
 <h2><a class="header" href="#building-our-calculator" id="building-our-calculator">Building our calculator</a></h2>
 <p>Now, lets put our buttons in a calculator:</p>
-<pre><pre class="playground"><code class="language-rust">fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{EditBox, TextButton, Window};
+</span><span class="boring">use kas::event::VirtualKeyCode as VK;
+</span><span class="boring">#[derive(Debug)]
+</span><span class="boring">struct Calculator;
+</span><span class="boring">impl Calculator {
+</span><span class="boring">   fn new() -&gt; Self { Calculator }
+</span><span class="boring">   fn display(&amp;self) -&gt; String { String::new() }
+</span><span class="boring">   fn handle(&amp;mut self, _msg: Key) -&gt; bool { false }
+</span><span class="boring">}
+</span><span class="boring">#[derive(Clone, Debug, VoidMsg)]
+</span><span class="boring">enum Key {
+</span><span class="boring">   Clear,
+</span><span class="boring">   Divide,
+</span><span class="boring">   Multiply,
+</span><span class="boring">   Subtract,
+</span><span class="boring">   Add,
+</span><span class="boring">   Equals,
+</span><span class="boring">   Char(char),
+</span><span class="boring">}
+</span>fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
     env_logger::init();
 
-    let buttons = /* snip */;
+    // hidden: let buttons = ...;
+<span class="boring">   let buttons = make_widget! {
+</span><span class="boring">       #[layout(grid)]
+</span><span class="boring">       #[handler(msg = Key)]
+</span><span class="boring">       #[widget(config=noauto)]
+</span><span class="boring">       struct {
+</span><span class="boring">           #[widget(col = 0, row = 0)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete]),
+</span><span class="boring">           #[widget(col = 1, row = 0)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;÷&quot;, Key::Divide).with_keys(&amp;[VK::Slash]),
+</span><span class="boring">           #[widget(col = 2, row = 0)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;×&quot;, Key::Multiply).with_keys(&amp;[VK::Asterisk]),
+</span><span class="boring">           #[widget(col = 3, row = 0)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;−&quot;, Key::Subtract),
+</span><span class="boring">           #[widget(col = 0, row = 1)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;7&quot;, Key::Char('7')),
+</span><span class="boring">           #[widget(col = 1, row = 1)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;8&quot;, Key::Char('8')),
+</span><span class="boring">           #[widget(col = 2, row = 1)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;9&quot;, Key::Char('9')),
+</span><span class="boring">           #[widget(col = 3, row = 1, rspan = 2, align = stretch)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;+&quot;, Key::Add),
+</span><span class="boring">           #[widget(col = 0, row = 2)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;4&quot;, Key::Char('4')),
+</span><span class="boring">           #[widget(col = 1, row = 2)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;5&quot;, Key::Char('5')),
+</span><span class="boring">           #[widget(col = 2, row = 2)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;6&quot;, Key::Char('6')),
+</span><span class="boring">           #[widget(col = 0, row = 3)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;1&quot;, Key::Char('1')),
+</span><span class="boring">           #[widget(col = 1, row = 3)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;2&quot;, Key::Char('2')),
+</span><span class="boring">           #[widget(col = 2, row = 3)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;3&quot;, Key::Char('3')),
+</span><span class="boring">           #[widget(col = 3, row = 3, rspan = 2, align = stretch)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals).with_keys(&amp;[VK::Return, VK::NumpadEnter]),
+</span><span class="boring">           #[widget(col = 0, row = 4, cspan = 2)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;0&quot;, Key::Char('0')),
+</span><span class="boring">           #[widget(col = 2, row = 4)]
+</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;.&quot;, Key::Char('.')),
+</span><span class="boring">       }
+</span><span class="boring">       impl kas::WidgetConfig {
+</span><span class="boring">           fn configure(&amp;mut self, mgr: &amp;mut Manager) {
+</span><span class="boring">               // Enable key bindings without Alt held:
+</span><span class="boring">               mgr.enable_alt_bypass(true);
+</span><span class="boring">           }
+</span><span class="boring">       }
+</span><span class="boring">   };
+</span>
     let content = make_widget! {
         #[layout(column)]
         #[handler(msg = VoidMsg)]
@@ -643,7 +733,7 @@ do this.</p>
     };
     let window = Window::new(&quot;Calculator&quot;, content);
 
-    let theme = kas_theme::FlatTheme::new().with_font_size(16.0);
+    let theme = kas::theme::FlatTheme::new().with_font_size(16.0);
     kas::shell::Toolkit::new(theme)?.with(window)?.run()
 }
 </code></pre></pre>

@@ -189,28 +189,35 @@ cannot write a generic implementation. Thus for now we must implement
 <p>To implement our event handling, we'll have our <a href="https://docs.rs/kas/latest/kas/widget/struct.TextButton.html"><code>TextButton</code></a> produce a
 message. Since the message doesn't need to include an identifier or any data,
 we'll just use <code>()</code> as the message type:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>            button: TextButton::new_msg(&quot;&amp;count&quot;, ()),
-<span class="boring">}
-</span></code></pre></pre>
+<pre><code class="language-ignore">            button: TextButton::new_msg(&quot;&amp;count&quot;, ()),
+</code></pre>
 <p>Note that our <code>Counter</code> has message type <a href="https://docs.rs/kas/latest/kas/event/enum.VoidMsg.html"><code>VoidMsg</code></a> and <code>()</code> is <em>not</em>
 convertible to <a href="https://docs.rs/kas/latest/kas/event/enum.VoidMsg.html"><code>VoidMsg</code></a>, thus if we use <code>TextButton&lt;()&gt;</code> in <code>Counter</code>
 without a handler we'll get a compile error.</p>
 <p>To write our handler, we just use an ordinary method and declare it within the
 <code>#[widget]</code> attribute:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>    #[widget(handler = increment)]
+<pre><code class="language-ignore">    #[widget(handler = increment)]
     button: TextButton&lt;()&gt;,
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <p>and:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{Label, TextButton};
+</span><span class="boring">#[derive(Debug, Widget)]
+</span><span class="boring">#[layout(column)]
+</span><span class="boring">struct Counter {
+</span><span class="boring">   #[widget_core]
+</span><span class="boring">   core: kas::CoreData,
+</span><span class="boring">   #[layout_data]
+</span><span class="boring">   layout_data: &lt;Self as kas::LayoutData&gt;::Data,
+</span><span class="boring">   #[widget(halign = centre)]
+</span><span class="boring">   display: Label&lt;String&gt;,
+</span><span class="boring">   #[widget]
+</span><span class="boring">   button: TextButton&lt;VoidMsg&gt;,
+</span><span class="boring">   counter: u32,
+</span><span class="boring">}
 </span>impl Counter {
     fn increment(&amp;mut self, mgr: &amp;mut Manager, _: ()) -&gt; Response&lt;VoidMsg&gt; {
         self.counter += 1;
@@ -221,12 +228,8 @@ without a handler we'll get a compile error.</p>
 <span class="boring">}
 </span></code></pre></pre>
 <p>The prototype for this message is fixed:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>fn handler(&amp;mut self, mgr: &amp;mut Manager, msg: M) -&gt; Response&lt;N&gt;
-<span class="boring">}
-</span></code></pre></pre>
+<pre><code class="language-ignore">fn handler(&amp;mut self, mgr: &amp;mut Manager, msg: M) -&gt; Response&lt;N&gt;
+</code></pre>
 <p>where <code>M</code> and <code>N</code> are the child's and parent's message types respectively.
 We've already seen <a href="https://docs.rs/kas/latest/kas/event/struct.Manager.html"><code>event::Manager</code></a>; <a href="https://docs.rs/kas/latest/kas/event/enum.Response.html"><code>Response</code></a> is just an extended
 version of <a href="https://doc.rust-lang.org/std/option/enum.Option.html"><code>Option</code></a>.</p>

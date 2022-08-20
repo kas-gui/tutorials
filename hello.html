@@ -197,7 +197,7 @@ that.</p>
 <p>If you look at the <a href="https://docs.rs/kas/latest/kas/widget/struct.TextButton.html"><code>TextButton</code></a> docs, you'll notice that it has an <code>on_push</code>
 method, allowing a closure to be set as a &quot;push&quot; event handler. This closure
 must have the following type:</p>
-<pre><code>F: Fn(&amp;mut Manager&lt;'_&gt;) -&gt; Option&lt;M&gt; + 'static
+<pre><code class="language-ignore">F: Fn(&amp;mut Manager&lt;'_&gt;) -&gt; Option&lt;M&gt; + 'static
 </code></pre>
 <p>In other words, it takes a reference to the <a href="https://docs.rs/kas/latest/kas/event/struct.Manager.html"><code>Manager</code></a> and returns an optional
 <em>message</em> of type <code>M</code>. We'll come back to messages later; for now we can just
@@ -206,6 +206,8 @@ be an option of any type we have to specify that we want <code>VoidMsg</code>:</
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::TextButton;
 </span>let content = TextButton::new(&quot;Push me&quot;).on_push::&lt;VoidMsg, _&gt;(|_| {
     println!(&quot;Hello!&quot;);
     None
@@ -217,6 +219,8 @@ a message dialog!</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{MessageBox, TextButton};
 </span>let content = TextButton::new(&quot;&amp;Push me&quot;).on_push::&lt;VoidMsg, _&gt;(|mgr| {
     let mbox = MessageBox::new(&quot;Message&quot;, &quot;You pushed the button.&quot;);
     mgr.add_window(Box::new(mbox));
