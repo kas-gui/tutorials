@@ -16,15 +16,11 @@ If not, then [Learn Rust](https://www.rust-lang.org/learn)!
 You are not expected to master Rust before learning KAS, but this tutorial
 series assumes a moderate understanding of the language.
 
-It is also assumed that you have basic familiarity with [git](https://git-scm.com/) and
-basic command line tools, though these aren't a significant topic of the tutorials.
-
-In general, it is suggested to use **nightly** Rust for development since this
-enables better macro diagnostics. **Stable** Rust can be used for release builds.
+KAS supports both **nightly** and **stable** Rust. Due to the nature of
+procedural macros, better diagnostics are available when using **nightly**.
 
 Tutorials use the latest stable release of [KAS](https://github.com/kas-gui/kas),
-currently v0.10.
-Code samples are formatted using [rustfmt](https://github.com/rust-lang/rustfmt).
+currently v0.11.
 
 ## Examples
 
@@ -36,6 +32,38 @@ git clone https://github.com/kas-gui/tutorials.git
 cd tutorials
 cargo run --example counter
 ```
+
+## KAS
+
+What is `kas`? Here is a heavily-reduced dependency tree:
+```plain
+kas — Wrapper crate to expose all components under a single API
+├── kas-core — Core types, traits and event handling
+│   ├── easy-cast — Numeric type-casting, re-exposed as kas::cast
+│   ├── kas-macros (proc-macro) — Macros
+│   │   └── impl-tools-lib — Backend used to implement macros
+│   ├── kas-text — Font handling, type setting
+│   │   ├── ab_glyph — Glyph rastering
+│   │   ├── harfbuzz_rs — Shaping (optional)
+│   │   ├── pulldown-cmark — Markdown parsing (optional)
+│   │   └── rustybuzz — Shaping (optional, default)
+│   ├── log — Logging facade
+│   ├── serde — Serialization support for persistent configuration (optional)
+│   ├── serde_json, serde_yaml, ron — Output formats for configuration (optional)
+│   └── winit — (a dependency here for event-handling code)
+├── kas-widgets — Standard widget collection
+├── kas-resvg — Canvas and Svg widgets
+│   ├── resvg — An SVG rendering library
+│   └── tiny-skia — Tiny CPU-only Skia subset
+├── kas-view — "View widgets" over synchronized data models (optional)
+└── kas-wgpu — Shell over Winit and WGPU; draw API implementation
+    ├── kas-theme — Theme API and implementations
+    │   └── dark-light — Dark/light theme detection
+    ├── wgpu — Rusty WebGPU API wrapper
+    ├── window_clipboard — Clipboard integration
+    └── winit — Cross-platform window creation
+```
+
 
 ## Licence
 
