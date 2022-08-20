@@ -42,7 +42,7 @@ cannot write a generic implementation. Thus for now we must implement
 To implement our event handling, we'll have our [`TextButton`] produce a
 message. Since the message doesn't need to include an identifier or any data,
 we'll just use `()` as the message type:
-```rust
+```ignore
             button: TextButton::new_msg("&count", ()),
 ```
 
@@ -52,12 +52,27 @@ without a handler we'll get a compile error.
 
 To write our handler, we just use an ordinary method and declare it within the
 `#[widget]` attribute:
-```rust
+```ignore
     #[widget(handler = increment)]
     button: TextButton<()>,
 ```
 and:
 ```rust
+# use kas::prelude::*;
+# use kas::widgets::{Label, TextButton};
+# #[derive(Debug, Widget)]
+# #[layout(column)]
+# struct Counter {
+#    #[widget_core]
+#    core: kas::CoreData,
+#    #[layout_data]
+#    layout_data: <Self as kas::LayoutData>::Data,
+#    #[widget(halign = centre)]
+#    display: Label<String>,
+#    #[widget]
+#    button: TextButton<VoidMsg>,
+#    counter: u32,
+# }
 impl Counter {
     fn increment(&mut self, mgr: &mut Manager, _: ()) -> Response<VoidMsg> {
         self.counter += 1;
@@ -68,7 +83,7 @@ impl Counter {
 ```
 
 The prototype for this message is fixed:
-```rust
+```ignore
 fn handler(&mut self, mgr: &mut Manager, msg: M) -> Response<N>
 ```
 where `M` and `N` are the child's and parent's message types respectively.

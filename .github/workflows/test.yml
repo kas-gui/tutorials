@@ -21,7 +21,12 @@ jobs:
           components: rustfmt
       - name: Install dependencies
         run: sudo apt-get install -y libxkbcommon-dev libxcb-shape0-dev libxcb-xfixes0-dev
-      - name: Test
+      - name: Test examples
         run: |
           cargo fmt -- --check
           cargo test
+      - name: Test code samples
+        working-directory: ./tests
+        run: |
+          ./generate.sh
+          cargo test --no-run
