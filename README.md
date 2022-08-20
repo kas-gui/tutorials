@@ -9,7 +9,7 @@ Example apps can be found in the
 [examples](https://github.com/kas-gui/tutorials/tree/master/examples) directory.
 
 Run examples like this:
-```
+```sh
 cargo run --example simple-window
 ```
 
