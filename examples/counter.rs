@@ -1,49 +1,53 @@
-use kas::class::HasString;
-use kas::event::{Manager, Response, VoidMsg};
-use kas::macros::Widget;
-use kas::widgets::{Label, TextButton, Window};
+use kas::prelude::*;
+use kas::widgets::{Label, TextButton};
 
-#[derive(Debug, Widget)]
-#[layout(column)]
-struct Counter {
-    #[widget_core]
-    core: kas::CoreData,
-
-    #[layout_data]
-    layout_data: <Self as kas::LayoutData>::Data,
-
-    #[widget(halign = centre)]
-    display: Label<String>,
-
-    #[widget(handler = increment)]
-    button: TextButton<()>,
-
-    counter: u32,
-}
-
-impl Counter {
-    fn new() -> Counter {
-        Counter {
-            core: Default::default(),
-            layout_data: Default::default(),
-            display: Label::new("0".to_string()),
-            button: TextButton::new_msg("&count", ()),
-            counter: 0,
-        }
-    }
-
-    fn increment(&mut self, mgr: &mut Manager, _: ()) -> Response<VoidMsg> {
-        self.counter += 1;
-        *mgr |= self.display.set_string(self.counter.to_string());
-        Response::None
-    }
-}
-
-fn main() -> Result<(), kas::shell::Error> {
+fn main() -> kas::shell::Result<()> {
     env_logger::init();
 
-    let window = Window::new("Counter", Counter::new());
+    #[derive(Clone, Debug)]
+    struct Increment(i32);
 
-    let theme = kas::theme::ShadedTheme::new();
-    kas::shell::Toolkit::new(theme)?.with(window)?.run()
+    impl_scope! {
+        #[widget{
+            layout = column: [
+                align(center): self.display,
+                row: [
+                    TextButton::new_msg("−", Increment(-1)),
+                    TextButton::new_msg("+", Increment(1)),
+                ],
+            ];
+        }]
+        #[derive(Debug)]
+        struct Counter {
+            core: widget_core!(),
+            #[widget]
+            display: Label<String>,
+            count: i32,
+        }
+        impl Self {
+            fn new(count: i32) -> Self {
+                Counter {
+                    core: Default::default(),
+                    display: Label::from(count.to_string()),
+                    count,
+                }
+            }
+        }
+        impl Widget for Self {
+            fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
+                if let Some(Increment(incr)) = mgr.try_pop_msg() {
+                    self.count += incr;
+                    *mgr |= self.display.set_string(self.count.to_string());
+                }
+            }
+        }
+        impl Window for Self {
+            fn title(&self) -> &str { "Counter" }
+        }
+    };
+
+    let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
+    kas::shell::Toolkit::new(theme)?
+        .with(Counter::new(0))?
+        .run()
 }
