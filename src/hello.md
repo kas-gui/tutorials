@@ -51,7 +51,7 @@ that.
 If you look at the [`TextButton`] docs, you'll notice that it has an `on_push`
 method, allowing a closure to be set as a "push" event handler. This closure
 must have the following type:
-```
+```ignore
 F: Fn(&mut Manager<'_>) -> Option<M> + 'static
 ```
 In other words, it takes a reference to the [`Manager`] and returns an optional
@@ -59,6 +59,8 @@ In other words, it takes a reference to the [`Manager`] and returns an optional
 return `None` — well, we could if type inference worked, but since `None` could
 be an option of any type we have to specify that we want `VoidMsg`:
 ```rust
+# use kas::prelude::*;
+# use kas::widgets::TextButton;
 let content = TextButton::new("Push me").on_push::<VoidMsg, _>(|_| {
     println!("Hello!");
     None
@@ -68,6 +70,8 @@ let content = TextButton::new("Push me").on_push::<VoidMsg, _>(|_| {
 But let's not just print to the command-line: lets use the [`Manager`] to open
 a message dialog!
 ```rust
+# use kas::prelude::*;
+# use kas::widgets::{MessageBox, TextButton};
 let content = TextButton::new("&Push me").on_push::<VoidMsg, _>(|mgr| {
     let mbox = MessageBox::new("Message", "You pushed the button.");
     mgr.add_window(Box::new(mbox));
