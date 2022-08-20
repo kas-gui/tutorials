@@ -1,10 +1,7 @@
-use kas::widgets::{TextButton, Window};
+use kas::widgets::dialog::MessageBox;
 
-fn main() -> Result<(), kas::shell::Error> {
-    env_logger::init();
-
-    let content = TextButton::new("Push me");
-    let window = Window::new("Hello", content);
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let window = MessageBox::new("Message", "Hello world");
 
     let theme = kas::theme::FlatTheme::new();
     kas::shell::Toolkit::new(theme)?.with(window)?.run()
