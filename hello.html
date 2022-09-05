@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html" class="active"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: derive(Widget)</a></li><li class="chapter-item expanded "><a href="counter2.html"><strong aria-hidden="true">4.</strong> Counter: messages</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">5.</strong> Calculator: make_widget and grid</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html" class="active"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: a simple widget</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">4.</strong> Calculator: make_widget and grid</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -156,16 +156,16 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#hello-world" id="hello-world">Hello World!</a></h1>
+<p><em>Topics: logging, shell, run</em></p>
 <p><img src="screenshots/hello.png" alt="Hello" /></p>
-<p>Okay, that's not &quot;hello world&quot;. Lets do something <em>slightly</em> more fun: a push button.
+<p>Lets get started with a simple message box.
 <a href="https://github.com/kas-gui/tutorials/blob/master/examples/hello.rs">Source</a>.</p>
-<pre><pre class="playground"><code class="language-rust">use kas::widgets::{TextButton, Window};
+<pre><pre class="playground"><code class="language-rust">use kas::widgets::dialog::MessageBox;
 
-fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
+fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
     env_logger::init();
 
-    let content = TextButton::new(&quot;Push me&quot;);
-    let window = Window::new(&quot;Hello&quot;, content);
+    let window = MessageBox::new(&quot;Message&quot;, &quot;Hello world&quot;);
 
     let theme = kas::theme::FlatTheme::new();
     kas::shell::Toolkit::new(theme)?.with(window)?.run()
@@ -173,65 +173,50 @@ fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
 </code></pre></pre>
 <pre><code class="language-sh">cargo run --example hello
 </code></pre>
-<p>Hopefully that is clear enough? Let me explain anyway:</p>
-<ul>
-<li>our <code>main</code> function may fail with the <code>kas::shell::Error</code> type; <code>Toolkit::new</code>
-and <code>Toolkit::with</code> can fail (the <code>?</code> &quot;try&quot; operator)</li>
-<li>we initialise a logger, <a href="https://docs.rs/env_logger"><code>env_logger</code></a> (optional,
-but lets us get useful messages; try setting the environment variable
-<code>RUST_LOG=kas=info</code> or <code>trace</code> before running the example)</li>
-<li>we construct a <code>TextButton</code> and a <code>Window</code> around that</li>
-<li>we use the <code>FlatTheme</code> (with default colours)</li>
-<li>we initialise the toolkit with our theme, add our window, and run it</li>
-</ul>
-<p>Note that <code>Toolkit::run</code> does not return. It is in fact a wrapper around
-<a href="https://docs.rs/winit/0.24/winit/event_loop/struct.EventLoop.html#method.run"><code>winit::event_loop::EventLoop::run</code></a>, which does not return.
-By default, the program will exit after all windows have closed.</p>
-<p>Also note that <code>kas</code> is mostly just a wrapper crate. We <em>could</em> instead import
-widgets from <code>kas_widgets</code>, the theme from <code>kas_theme</code> and <code>Toolkit</code> from
-<code>kas_wgpu</code>. We <em>could</em> even write our own theme and/or shell instead of using
-<code>kas_theme</code> and/or <code>kas_wgpu</code>, though we have little reason to.</p>
-<h2><a class="header" href="#event-handling" id="event-handling">Event handling</a></h2>
-<p>You may have noticed that the button used above doesn't <em>do</em> anything. Lets fix
-that.</p>
-<p>If you look at the <a href="https://docs.rs/kas/latest/kas/widget/struct.TextButton.html"><code>TextButton</code></a> docs, you'll notice that it has an <code>on_push</code>
-method, allowing a closure to be set as a &quot;push&quot; event handler. This closure
-must have the following type:</p>
-<pre><code class="language-ignore">F: Fn(&amp;mut Manager&lt;'_&gt;) -&gt; Option&lt;M&gt; + 'static
-</code></pre>
-<p>In other words, it takes a reference to the <a href="https://docs.rs/kas/latest/kas/event/struct.Manager.html"><code>Manager</code></a> and returns an optional
-<em>message</em> of type <code>M</code>. We'll come back to messages later; for now we can just
-return <code>None</code> — well, we could if type inference worked, but since <code>None</code> could
-be an option of any type we have to specify that we want <code>VoidMsg</code>:</p>
+<h2><a class="header" href="#logging" id="logging">Logging</a></h2>
+<p>Enabling a logger is optional, but can be very useful for debugging:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">use kas::prelude::*;
-</span><span class="boring">use kas::widgets::TextButton;
-</span>let content = TextButton::new(&quot;Push me&quot;).on_push::&lt;VoidMsg, _&gt;(|_| {
-    println!(&quot;Hello!&quot;);
-    None
-});
+</span>env_logger::init();
 <span class="boring">}
 </span></code></pre></pre>
-<p>But let's not just print to the command-line: lets use the <a href="https://docs.rs/kas/latest/kas/event/struct.Manager.html"><code>Manager</code></a> to open
-a message dialog!</p>
+<p>KAS uses the <a href="https://crates.io/crates/log"><code>log</code></a> facade internally. To see the
+output, we need an implementation, such as
+<a href="https://crates.io/crates/env_logger"><code>env_logger</code></a>.</p>
+<p>Trace level can be a bit chatty; to get a <em>reasonable</em> level of output you might
+try this:</p>
+<pre><code class="language-sh">export RUST_LOG=warn,naga=error,kas=debug
+cargo run --example hello
+</code></pre>
+<h2><a class="header" href="#a-window-a-shell" id="a-window-a-shell">A window, a shell</a></h2>
+<p>Next, we define our window. For this example, we use <a href="https://docs.rs/kas/latest/kas/widgets/dialog/struct.MessageBox.html"><code>kas::widgets::dialog::MessageBox</code></a>.</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span><span class="boring">use kas::prelude::*;
-</span><span class="boring">use kas::widgets::{MessageBox, TextButton};
-</span>let content = TextButton::new(&quot;&amp;Push me&quot;).on_push::&lt;VoidMsg, _&gt;(|mgr| {
-    let mbox = MessageBox::new(&quot;Message&quot;, &quot;You pushed the button.&quot;);
-    mgr.add_window(Box::new(mbox));
-    None
-});
+</span><span class="boring">use kas::widgets::dialog::MessageBox;
+</span>let window = MessageBox::new(&quot;Message&quot;, &quot;Hello world&quot;);
 <span class="boring">}
 </span></code></pre></pre>
-<p>One final note: did you see we put an ampersand in <code>&quot;&amp;Push me&quot;</code>? Try holding
-<code>Alt</code> and pressing <code>P</code> when you run the example:</p>
-<pre><code class="language-sh">cargo run --example hello-handler
-</code></pre>
+<p>This line doesn't actually <em>do</em> anything besides creating a &quot;window&quot; object.
+A window is any type implementing the <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> trait.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use kas::widgets::dialog::MessageBox;
+</span><span class="boring">fn main() -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt; {
+</span><span class="boring">let window = MessageBox::new(&quot;Message&quot;, &quot;Hello world&quot;);
+</span>let theme = kas::theme::FlatTheme::new();
+kas::shell::Toolkit::new(theme)?.with(window)?.run()
+<span class="boring">}
+</span></code></pre></pre>
+<p><a href="https://docs.rs/kas/latest/kas/shell/struct.Toolkit.html"><code>kas::shell::Toolkit</code></a> is the &quot;shell&quot;, providing bindings to windowing and
+graphics functionality (at the time of writing, via Winit and WGPU).
+One <em>could</em> write their own shell (e.g. to embed KAS), but that would be an
+advanced topic (and breaking new ground).</p>
+<p>High-level drawing and sizing is handled by a &quot;theme&quot;, which we provide to the
+toolkit. Writing a custom theme is another advanced (but better tested) topic.
+Here we just use <a href="https://docs.rs/kas/latest/kas/theme/struct.FlatTheme.html"><code>FlatTheme</code></a>.</p>
+<p>Finally, <a href="https://docs.rs/kas/latest/kas/shell/struct.Toolkit.html#method.run"><code>Toolkit::run</code></a> starts our UI. This method does not return (see
+<a href="https://docs.rs/winit/latest/winit/event_loop/struct.EventLoop.html#method.run"><code>winit::event_loop::EventLoop::run</code></a> documentation).</p>
+<p>The toolkit (and program) will exit after all windows have closed.</p>
 
                     </main>
 

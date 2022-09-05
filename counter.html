@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Counter: derive(Widget) - KAS tutorials</title>
+        <title>Counter: a simple widget - KAS tutorials</title>
         
         
 
@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html" class="active"><strong aria-hidden="true">3.</strong> Counter: derive(Widget)</a></li><li class="chapter-item expanded "><a href="counter2.html"><strong aria-hidden="true">4.</strong> Counter: messages</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">5.</strong> Calculator: make_widget and grid</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html" class="active"><strong aria-hidden="true">3.</strong> Counter: a simple widget</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">4.</strong> Calculator: make_widget and grid</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -155,125 +155,231 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#counter-part-1-derivewidget-and-layout" id="counter-part-1-derivewidget-and-layout">Counter part 1: derive(Widget) and layout</a></h1>
+                        <h1><a class="header" href="#counter-a-simple-widget" id="counter-a-simple-widget">Counter: a simple widget</a></h1>
+<p><em>Topics: prelude, <code>impl_scope!</code> and <code>#[widget]</code> macros, messages, <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> trait</em></p>
 <p><img src="screenshots/counter.png" alt="Counter" /></p>
 <p>Graphical User Interfaces have two main concerns:</p>
 <ol>
 <li>Presenting information visually</li>
 <li>Handling user input</li>
 </ol>
-<p>In this tutorial we use a very simple &quot;app&quot; (a counter) to introduce KAS's
-approach to these topics, in two parts:</p>
-<ol>
-<li>Introduction to layout with custom widgets</li>
-<li>Event handling with messages</li>
-</ol>
-<h2><a class="header" href="#layout-with-derivewidget" id="layout-with-derivewidget">Layout with derive(Widget)</a></h2>
-<p>To make a counter, we need two widgets: a button and a label.</p>
-<p>How do we put two widgets next to each other? With another widget!</p>
-<p>KAS does not provide a &quot;pair&quot; or &quot;tuple&quot; widget. There is a <code>List</code> widget,
-and we <em>could</em> box our button and label and push both into a list, but this
-doesn't work well with event handling. Instead, we'll build a custom widget
-(the tedious way — the next example will introduce some syntactic sugar to
-make custom widgets more convenient, but here we start with the basics).</p>
-<h3><a class="header" href="#implementing-widget" id="implementing-widget">Implementing Widget</a></h3>
-<p><a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a> is &quot;just&quot; a trait, but it is better to think of it as a family of
-traits, since all widgets must implement <a href="https://docs.rs/kas/latest/kas/trait.WidgetCore.html"><code>WidgetCore</code></a>, <a href="https://docs.rs/kas/latest/kas/trait.WidgetChildren.html"><code>WidgetChildren</code></a>,
-<a href="https://docs.rs/kas/latest/kas/trait.Layout.html"><code>Layout</code></a>, <a href="https://docs.rs/kas/latest/kas/trait.WidgetConfig.html"><code>WidgetConfig</code></a>, <a href="https://docs.rs/kas/latest/kas/event/trait.Handler.html"><code>event::Handler</code></a>, <a href="https://docs.rs/kas/latest/kas/event/trait.SendEvent.html"><code>event::SendEvent</code></a> and
-finally <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a>.</p>
-<p>It is not recommended, or even supported, to implement all these traits
-explicitly. Instead, the <code>derive(Widget)</code> macro must be used, as in this example:</p>
+<p><a href="https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs">The code for this example can be found here</a>. Lets dive in.</p>
+<h2><a class="header" href="#prelude" id="prelude">Prelude</a></h2>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>use kas::event::VoidMsg;
-use kas::macros::Widget;
+</span>use kas::prelude::*;
 use kas::widgets::{Label, TextButton};
-
-#[derive(Debug, Widget)]
-#[layout(column)]
-struct Counter {
-    #[widget_core]
-    core: kas::CoreData,
-
-    #[layout_data]
-    layout_data: &lt;Self as kas::LayoutData&gt;::Data,
-
-    #[widget(halign = centre)]
-    display: Label&lt;String&gt;,
-
-    #[widget]
-    button: TextButton&lt;VoidMsg&gt;,
-
-    counter: u32,
-}
-
-impl Counter {
-    fn new() -&gt; Counter {
-        Counter {
-            core: Default::default(),
-            layout_data: Default::default(),
-            display: Label::new(&quot;0&quot;.to_string()),
-            button: TextButton::new(&quot;&amp;count&quot;),
-            counter: 0,
-        }
+<span class="boring">}
+</span></code></pre></pre>
+<p>The <a href="https://docs.rs/kas/latest/kas/prelude/index.html"><code>kas::prelude</code></a> includes a bunch of commonly-used, faily unambiguous stuff.
+Besides that, we only use a couple of widgets.</p>
+<h2><a class="header" href="#defining-counter-with-the-help-of-macros" id="defining-counter-with-the-help-of-macros">Defining Counter with the help of macros</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{Label, TextButton};
+</span><span class="boring">#[derive(Clone, Debug)] struct Increment(i32);
+</span>impl_scope! {
+    #[widget{
+        layout = column: [
+            align(center): self.display,
+            row: [
+                TextButton::new_msg(&quot;−&quot;, Increment(-1)),
+                TextButton::new_msg(&quot;+&quot;, Increment(1)),
+            ],
+        ];
+    }]
+    #[derive(Debug)]
+    struct Counter {
+        core: widget_core!(),
+        #[widget]
+        display: Label&lt;String&gt;,
+        count: i32,
     }
 }
 <span class="boring">}
 </span></code></pre></pre>
-<h3><a class="header" href="#derivedebug-widget" id="derivedebug-widget">derive(Debug, Widget)</a></h3>
-<p>The standard library defines <code>derive(Debug)</code> for us. In contrast, we must bring
-the <code>derive(Widget)</code> macro into scope with <code>use kas::macros::Widget</code> (or
-use <code>derive(kas::macros::Widget)</code>).</p>
-<p>Further, since widgets are complex things, we must configure what
-<code>derive(Widget)</code> does. The macro supports several attributes: <code>#[layout]</code>,
-<code>#[widget]</code>, and more, configuring how the various widget traits are implemeted
-(or opting out of derived implementations for some traits).</p>
-<h4><a class="header" href="#core" id="core">Core</a></h4>
-<p>First off, all widgets require a <code>CoreData</code> field. This field can have any name
-but must have type <code>kas::CoreData</code>, and must be identified with
-<code>#[widget_core]</code>. We construct it with <a href="https://doc.rust-lang.org/nightly/std/default/trait.Default.html#tymethod.default"><code>Default::default</code></a>.</p>
-<p>This field is required to implement <a href="https://docs.rs/kas/latest/kas/trait.WidgetCore.html"><code>WidgetCore</code></a>.</p>
-<h4><a class="header" href="#child-widgets" id="child-widgets">Child widgets</a></h4>
-<p><code>Counter</code> also contains our two (child) widgets, <code>display</code> and <code>button</code>, both
-annotated with <code>#[widget]</code>. The <code>#[widget]</code>
-attribute is required to ensure the widgets get enumerated (<a href="https://docs.rs/kas/latest/kas/trait.WidgetChildren.html"><code>WidgetChildren</code></a>),
-configured, added to the layout (<a href="https://docs.rs/kas/latest/kas/trait.Layout.html"><code>Layout</code></a>) and sent events (<a href="https://docs.rs/kas/latest/kas/event/trait.SendEvent.html"><code>event::SendEvent</code></a>).</p>
-<p>Child widgets may be of any type implementing the <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a> trait, though as
-we'll see later, message types must also be compatible if the child's messages
-are not explicitly handled.</p>
-<h4><a class="header" href="#layout" id="layout">Layout</a></h4>
-<p>For a vertical layout, we &quot;just&quot; declare <code>#[layout(column)]</code> and list the child
-widgets in order. The macro generates the layout code for us, and we're done...</p>
-<p>... except that the layout code also needs data storage. For that, we provide a
-field annotated with <code>#[layout_data]</code> with type
-<code>&lt;Self as kas::LayoutData&gt;::Data</code>.</p>
-<p>A few other layouts are supported:</p>
+<h3><a class="header" href="#macros" id="macros">Macros</a></h3>
+<p>The above snippet includes five macro usages:</p>
+<ol>
+<li>
+<p><a href="https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html"><code>impl_scope!</code></a> is a proc-macro which:</p>
 <ul>
-<li><code>single</code> (one widget only)</li>
-<li><code>col</code>, <code>column</code>, <code>down</code>: all equivalent</li>
-<li><code>row</code>, <code>right</code>: horizontal layout</li>
-<li><code>up</code>, <code>left</code>: reversed column/row</li>
-<li><code>grid</code>: two-dimensional layout (we'll use this for the next example)</li>
+<li>encompasses a type definition (enum/struct/type alias/union) and <code>impl</code> blocks</li>
+<li>provides <code>impl Self</code> syntax (<code>Self</code> expands to the type's name, with correct
+handling of generic parameters and bounds)</li>
+<li>supports some attribute macros with slightly non-standard behaviour</li>
 </ul>
-<h4><a class="header" href="#alignment-hints" id="alignment-hints">Alignment hints</a></h4>
-<p>You may have noticed <code>#[widget(halign = centre)]</code> above. The <code>#[widget]</code>
-attribute has a few optional parameters: <code>halign</code> and <code>valign</code> for alignment,
-<code>col</code> and <code>row</code> for <code>grid</code> positioning, and a couple more.</p>
-<p>These alignment parameters are <em>hints</em>: they construct an <a href="https://docs.rs/kas/latest/kas/layout/struct.AlignHints.html"><code>AlignHints</code></a> object
-which is passed to the widget's layout code. It is up to the widget what to do
-with the hint; for a <code>Label</code> it affects text-flow; some other widgets reposition
-themselves within the available space; some others simply fill all available
-space.</p>
-<p>Available values:</p>
+</li>
+<li>
+<p>The <code>#[widget { layout = ..; }]</code> attribute macro (<a href="https://docs.rs/kas/latest/kas/macros/attr.widget.html"><code>kas::macros::widget</code></a>) is used to
+implement <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a> for <code>struct Counter</code>. Note that this is the only
+supported method of implementing the <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a> trait family (including
+super traits). Further note that this macro may only be used within an <code>impl_scope!</code>.</p>
+</li>
+<li>
+<p><code>#[derive(Debug)]</code> — you already know this.</p>
+</li>
+<li>
+<p><code>widget_core!()</code> is a type generator. This is not a stand-alone macro, but a
+marker substituted by the <code>#[widget]</code> macro (2). Every widget must have one
+field with this type. The substition may be the <a href="https://docs.rs/kas/latest/kas/struct.CoreData.html"><code>CoreData</code></a> type or may be
+a generated type with the same <code>rect: Rect</code> and <code>id: WidgetId</code> fields (which
+may be accessed directly). The type always supports <a href="https://doc.rust-lang.org/stable/std/fmt/trait.Debug.html"><code>Debug</code></a>, <a href="https://doc.rust-lang.org/stable/std/default/trait.Default.html"><code>Default</code></a>
+and <a href="https://doc.rust-lang.org/stable/std/clone/trait.Clone.html"><code>Clone</code></a>.</p>
+</li>
+<li>
+<p><code>#[widget] display: Label&lt;String&gt;</code> is also a marker supported by the outer
+<code>#[widget]</code> attribute macro (2). This attribute may appear on a field to
+mark this field as a child widget (and is thus configured correctly).</p>
+</li>
+</ol>
+<h3><a class="header" href="#constructor-and-layout" id="constructor-and-layout">Constructor and layout</a></h3>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{Label, TextButton};
+</span><span class="boring">#[derive(Clone, Debug)] struct Increment(i32);
+</span>impl_scope! {
+    #[widget{
+        layout = column: [
+            align(center): self.display,
+            row: [
+                TextButton::new_msg(&quot;−&quot;, Increment(-1)),
+                TextButton::new_msg(&quot;+&quot;, Increment(1)),
+            ],
+        ];
+    }]
+    #[derive(Debug)]
+    struct Counter {
+        core: widget_core!(),
+        #[widget]
+        display: Label&lt;String&gt;,
+        count: i32,
+    }
+
+    impl Self {
+        fn new(count: i32) -&gt; Self {
+            Counter {
+                core: Default::default(),
+                display: Label::from(count.to_string()),
+                count,
+            }
+        }
+    }
+};
+<span class="boring">}
+</span></code></pre></pre>
+<p>First note the simple constructor: <code>fn Counter::new</code>. (Reminder: <code>impl Self</code>
+is expanded to <code>impl Counter</code> by the <code>impl_scope!</code> macro.)</p>
+<p>Our widget's layout is here defined by the <code>layout = ..</code> parameter.
+(An alternative is to implement <a href="https://docs.rs/kas/latest/kas/trait.Layout.html"><code>Layout</code></a> directly.)
+The <code>layout</code> syntax is new, but should be easy to understand:</p>
 <ul>
-<li><code>default</code>: usually left/top alignment, but for text it depends on the script
-direction (e.g. Arabic will be right-aligned)</li>
-<li><code>left</code> or <code>top</code> (depending on orientation)</li>
-<li><code>right</code> or <code>bottom</code></li>
-<li><code>centre</code> (or <code>center</code>, for those who prefer US English)</li>
-<li><code>stretch</code>: fill space (e.g. justified text)</li>
+<li>Our top layout is a <code>column</code> containing ...</li>
+<li>... the field <code>self.display</code>, annotated with <code>align(center)</code> ...</li>
+<li>... and a <code>row</code> of two <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> widgets</li>
 </ul>
+<p>In general, layout syntax is one of four things:</p>
+<ul>
+<li>a keyword such as <code>column</code> or <code>align(..)</code>, followed by a <code>:</code> and some
+sub-layout (or list of sub-layouts)</li>
+<li><code>self.foo</code> where <code>foo</code> is a field implementing <a href="https://docs.rs/kas/latest/kas/trait.Layout.html"><code>Layout</code></a> (possibly but not necessarily a widget)</li>
+<li><code>Foo::new(..)</code> where <code>Foo</code> is a type name (starting upper-case), the type is
+a <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a>, and the whole expression <code>Foo::new(..)</code> constructs an object
+which coerces to <code>dyn Widget</code></li>
+<li><code>&quot;blah blah&quot;</code> — a simple label</li>
+</ul>
+<p>It's a <em>bit</em> more complex than this, but that should get you started. You can
+read the reference here: <a href="https://docs.rs/kas/latest/kas/macros/attr.widget.html"><code>kas::macros::widget</code></a>.</p>
+<p>Aside: since KAS is a <em>stateful</em> UI system, the <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> widgets in our
+row must be stored <em>somewhere</em>, right? Yes: in the <code>widget_core!</code> field
+(a generated type).</p>
+<h2><a class="header" href="#messages" id="messages">Messages</a></h2>
+<h3><a class="header" href="#the-message-type" id="the-message-type">The message type</a></h3>
+<p>We skipped this type definition above:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Clone, Debug)]
+struct Increment(i32);
+<span class="boring">}
+</span></code></pre></pre>
+<p>A simple tuple struct, used for our button messages. The <a href="https://doc.rust-lang.org/stable/std/fmt/trait.Debug.html"><code>Debug</code></a> implementation
+is required to send as a message; <a href="https://doc.rust-lang.org/stable/std/clone/trait.Clone.html"><code>Clone</code></a> is needed for the <code>new_msg</code> method.</p>
+<p>Aside: we <em>could</em> simply use <code>i32</code> and forget the <code>Increment</code> type, but using a
+named type provides useful documentation, especially in log messages.</p>
+<h3><a class="header" href="#the-message-stack" id="the-message-stack">The message stack</a></h3>
+<p>Our button widgets are constructed using <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html#method.new_msg"><code>TextButton::new_msg</code></a>.
+Referring to the <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> documentation (or the source) we see that
+this is equivalent to <code>TextButton::new(&quot;+&quot;).on_push(|mgr| mgr.push_msg(Increment(1)))</code>,
+using the method <a href="https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.push_msg"><code>EventMgr::push_msg</code></a>, which pushes to the &quot;message stack&quot;.</p>
+<p>KAS's <a href="https://docs.rs/kas/latest/kas/event/index.html#event-handling-model">event-handling model is described here</a>.
+The relevant parts to our example are:</p>
+<ol>
+<li>On activation (via mouse click or keyboard), <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a>'s handler is called.</li>
+<li>This handler calls <a href="https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.push_msg"><code>EventMgr::push_msg</code></a> to push <code>Increment(1)</code> to
+the message stack.</li>
+<li>While the message stack is non-empty, <a href="https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_message"><code>Widget::handle_message</code></a> is called
+on <em>each</em> ancestor of the <code>TextButton</code> widget.</li>
+<li>Our <code>Counter</code> should implement this method, using <a href="https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.try_pop_msg"><code>EventMgr::try_pop_msg</code></a>
+to retrieve the message from the stack.</li>
+</ol>
+<h3><a class="header" href="#handling-messages" id="handling-messages">Handling messages</a></h3>
+<p>Lets implement <a href="https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_message"><code>Widget::handle_message</code></a> on <code>Counter</code>:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{Label, TextButton};
+</span><span class="boring">#[derive(Clone, Debug)] struct Increment(i32);
+</span>impl_scope! {
+    #[widget{
+        layout = column: [
+            align(center): self.display,
+            row: [TextButton::new_msg(&quot;−&quot;, Increment(-1)), TextButton::new_msg(&quot;+&quot;, Increment(1))],
+        ];
+    }]
+    #[derive(Debug)]
+    struct Counter {
+        core: widget_core!(),
+        #[widget]
+        display: Label&lt;String&gt;,
+        count: i32,
+    }
+    impl Widget for Self {
+        fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
+            if let Some(Increment(incr)) = mgr.try_pop_msg() {
+                self.count += incr;
+                *mgr |= self.display.set_string(self.count.to_string());
+            }
+        }
+    }
+};
+<span class="boring">}
+</span></code></pre></pre>
+<p>The method <a href="https://docs.rs/kas/latest/kas/class/trait.HasString.html#tymethod.set_string"><code>HasString::set_string</code></a> returns a <a href="https://docs.rs/kas/latest/kas/struct.TkAction.html"><code>TkAction</code></a> (to notify that a
+redraw is required). <a href="https://docs.rs/kas/latest/kas/struct.TkAction.html"><code>TkAction</code></a> is a <code>#[must_use</code>] type which should be fed
+to <a href="https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.send_action"><code>EventState::send_action</code></a>, or equivalently: <code>*mgr |= action</code>.</p>
+<h4><a class="header" href="#unhandled-messages" id="unhandled-messages">Unhandled messages</a></h4>
+<p>Aside: what if we forgot to write our <code>handle_message</code> implementation and left
+the message on the stack? Assuming you have a logger enabled, you'd see
+something like this:</p>
+<pre><code class="language-sh">[2022-08-20T14:33:47Z DEBUG kas_core::event::manager::messages] push_msg: counter::main::Increment::Increment(1)
+[2022-08-20T14:33:47Z WARN  kas_core::event::manager::messages] unhandled: counter::main::Increment::Increment(1)
+</code></pre>
+<p>Now perhaps you see why we defined our <code>Increment</code> type and didn't simply push an <code>i32</code>!</p>
+<h2><a class="header" href="#window" id="window">Window</a></h2>
+<p>Windows must implement the <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> trait. We could use
+<a href="https://docs.rs/kas/latest/kas/widgets/dialog/struct.Window.html"><code>kas::widgets::dialog::Window</code></a>,
+but implementing <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> on a custom widget is very easy:</p>
+<pre><code class="language-rust ignore">impl Window for Self {
+    fn title(&amp;self) -&gt; &amp;str { &quot;Counter&quot; }
+}
+</code></pre>
 
                     </main>
 
@@ -286,7 +392,7 @@ direction (e.g. Arabic will be right-aligned)</li>
                         
 
                         
-                            <a rel="next" href="counter2.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="calculator.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -304,7 +410,7 @@ direction (e.g. Arabic will be right-aligned)</li>
                 
 
                 
-                    <a rel="next" href="counter2.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="calculator.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

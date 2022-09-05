@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: derive(Widget)</a></li><li class="chapter-item expanded "><a href="counter2.html"><strong aria-hidden="true">4.</strong> Counter: messages</a></li><li class="chapter-item expanded "><a href="calculator.html" class="active"><strong aria-hidden="true">5.</strong> Calculator: make_widget and grid</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: a simple widget</a></li><li class="chapter-item expanded "><a href="calculator.html" class="active"><strong aria-hidden="true">4.</strong> Calculator: make_widget and grid</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -156,283 +156,182 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#calculator-make_widget-and-grid-layout" id="calculator-make_widget-and-grid-layout">Calculator: make_widget and grid layout</a></h1>
+<p><em>Topics: grid layout, accelerator bindings</em></p>
 <p><img src="screenshots/calculator.png" alt="Calculator" /></p>
-<p>The previous tutorial built a custom widget with <code>derive(Widget)</code>, used
-<code>layout(column)</code> and used a message for event handling.
-This tutorial follows on from there, introducing the <code>make_widget!</code> macro, using
-<code>layout(grid)</code>, and some more message-based event handling.</p>
-<p>We use this to build a simple but fully functional calculator, including the
-expected keyboard bindings, in under 200 lines of code.</p>
-<h2><a class="header" href="#the-make_widget-macro" id="the-make_widget-macro">The make_widget macro</a></h2>
-<p>If you thought in the last tutorial that having to derive a whole custom widget
-just for simple layout and event handling was a bit much, you're not alone. The
-<code>make_widget!</code> macro makes this much easier, but does have some rough edges.</p>
-<p>Looking back at our <a href="counter.html#implementing-widget"><code>Counter</code> widget</a>, there
-are a few things which are either &quot;boring details of a widget&quot; or redundant:</p>
-<ul>
-<li><code>#[derive(Debug, Widget)]</code>: all widgets must have these derives</li>
-<li>the <code>#[widget_core]</code> and <code>#[layout_data]</code> fields</li>
-<li>declaring the field types, then constructing in a separate function</li>
-<li>having to write the type when this could be deduced</li>
-<li>having to <em>name</em> a field we never access</li>
-</ul>
-<p>The <code>make_widget!</code> macro addresses <em>all</em> of the above. But be warned, Rust does
-not support type-inference on fields so the macro has to emulate this with
-generics, and that has its rough edges (including atrocious error messages).</p>
-<p>Enough talk, lets see it in action.</p>
-<h3><a class="header" href="#buttons" id="buttons">Buttons</a></h3>
-<p>A calculator needs a lot of buttons, and we'll use the <code>grid</code> layout with
-<code>make_widget</code>:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span>use kas::prelude::*;
-use kas::widgets::TextButton;
-use kas::event::VirtualKeyCode as VK;
+<p>The full example <a href="https://github.com/kas-gui/tutorials/blob/master/examples/calculator.rs">can be found here</a>.
+Abbreviated code is listed below.</p>
+<pre><pre class="playground"><code class="language-rust">use kas::event::{Command, VirtualKeyCode as VK};
+use kas::prelude::*;
+use kas::widgets::{EditBox, TextButton};
 
-<span class="boring">#[derive(Clone, Debug, VoidMsg)]
-</span><span class="boring">enum Key {
-</span><span class="boring">   Clear,
-</span><span class="boring">   Divide,
-</span><span class="boring">   Multiply,
-</span><span class="boring">   Subtract,
-</span><span class="boring">   Add,
-</span><span class="boring">   Equals,
-</span><span class="boring">   Char(char),
-</span><span class="boring">}
-</span>let buttons = make_widget! {
-    #[layout(grid)]
-    #[handler(msg = Key)]
-    #[widget(config=noauto)]
-    struct {
-        #[widget(col = 0, row = 0)]
-        _ = TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete]),
-        #[widget(col = 1, row = 0)]
-        _ = TextButton::new_msg(&quot;&amp;÷&quot;, Key::Divide).with_keys(&amp;[VK::Slash]),
-        #[widget(col = 2, row = 0)]
-        _ = TextButton::new_msg(&quot;&amp;×&quot;, Key::Multiply).with_keys(&amp;[VK::Asterisk]),
-        #[widget(col = 3, row = 0)]
-        _ = TextButton::new_msg(&quot;&amp;−&quot;, Key::Subtract),
-        #[widget(col = 0, row = 1)]
-        _ = TextButton::new_msg(&quot;&amp;7&quot;, Key::Char('7')),
-        #[widget(col = 1, row = 1)]
-        _ = TextButton::new_msg(&quot;&amp;8&quot;, Key::Char('8')),
-        #[widget(col = 2, row = 1)]
-        _ = TextButton::new_msg(&quot;&amp;9&quot;, Key::Char('9')),
-        #[widget(col = 3, row = 1, rspan = 2, align = stretch)]
-        _ = TextButton::new_msg(&quot;&amp;+&quot;, Key::Add),
-        #[widget(col = 0, row = 2)]
-        _ = TextButton::new_msg(&quot;&amp;4&quot;, Key::Char('4')),
-        #[widget(col = 1, row = 2)]
-        _ = TextButton::new_msg(&quot;&amp;5&quot;, Key::Char('5')),
-        #[widget(col = 2, row = 2)]
-        _ = TextButton::new_msg(&quot;&amp;6&quot;, Key::Char('6')),
-        #[widget(col = 0, row = 3)]
-        _ = TextButton::new_msg(&quot;&amp;1&quot;, Key::Char('1')),
-        #[widget(col = 1, row = 3)]
-        _ = TextButton::new_msg(&quot;&amp;2&quot;, Key::Char('2')),
-        #[widget(col = 2, row = 3)]
-        _ = TextButton::new_msg(&quot;&amp;3&quot;, Key::Char('3')),
-        #[widget(col = 3, row = 3, rspan = 2, align = stretch)]
-        _ = TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals).with_keys(&amp;[VK::Return, VK::NumpadEnter]),
-        #[widget(col = 0, row = 4, cspan = 2)]
-        _ = TextButton::new_msg(&quot;&amp;0&quot;, Key::Char('0')),
-        #[widget(col = 2, row = 4)]
-        _ = TextButton::new_msg(&quot;&amp;.&quot;, Key::Char('.')),
-    }
-    impl kas::WidgetConfig {
-        fn configure(&amp;mut self, mgr: &amp;mut Manager) {
-            // Enable key bindings without Alt held:
-            mgr.enable_alt_bypass(true);
-        }
-    }
-};
-<span class="boring">}
-</span></code></pre></pre>
-<p>Here, you see, we didn't need to use <code>#[derive(Debug, Widget)]</code> since the
-<code>make_widget</code> macro does it for us. We also didn't need to mention the core or
-layout-data fields. None of the buttons are named (<code>_</code> is used instead) or typed
-since we never refer to them again and the type can be inferred.
-Also notice that the <code>struct</code> type is unnamed, and similarly the following
-<code>impl</code> block doesn't name type: <code>make_widget</code> creates an anonymous struct.
-(Since this is all implemented in macros and Rust does not natively support
-anonymous items or untyped struct fields, implementation details may sometimes
-slip through, especially in error messages.)</p>
-<h4><a class="header" href="#grid-layout" id="grid-layout">Grid layout</a></h4>
-<p>This is pretty simple to use: <code>#[layout(grid)]</code>, and specify <code>col</code> and <code>row</code> in
-the <code>#[widget]</code> attribute. The number of rows and columns is auto-detected.
-Both <code>row</code> and <code>col</code> are optional, with the default value 0.</p>
-<p>In a few cases we see spans: e.g. <code>cspan = 2</code> implies that two columns are
-spanned, starting from the column selected by <code>col</code>. Both <code>rspan</code> and <code>cspan</code>
-default to 1 if not specified.</p>
-<h4><a class="header" href="#key-bindings" id="key-bindings">Key bindings</a></h4>
-<p>Like several other GUI toolkits, KAS allows shortcut keys to be specified
-through the label, e.g. <code>&amp;clear</code> binds the C key. (Usually this method of
-binding is only seen in menus, but in KAS it can be used on most &quot;activatable&quot;
-controls.) <a href="https://docs.rs/kas/latest/kas/widget/struct.TextButton.html"><code>TextButton</code></a> allows additional keys can be specified through
-<a href="https://docs.rs/kas/latest/kas/widget/struct.TextButton.html#method.with_keys"><code>TextButton::with_keys</code></a>.</p>
-<p>Both the above types of bindings are usually only accessible while the Alt key
-is held — the difference being that those specified through a label also
-underline the letter/symbol following the <code>&amp;</code>.</p>
-<p>In a calculator, it is desirable that these keys are accessible without Alt
-held. <a href="https://docs.rs/kas/latest/kas/event/struct.Manager.html#method.enable_alt_bypass"><code>Manager::enable_alt_bypass</code></a> enables this (for the whole window).
-We could potentially call this method elsewhere, e.g. in an event handler, but
-we do so in the <a href="https://docs.rs/kas/latest/kas/trait.WidgetConfig.html#method.configure"><code>WidgetConfig::configure</code></a> method. (Notice how we used
-<code>#[widget(config=noauto)]</code> to opt out of deriving <a href="https://docs.rs/kas/latest/kas/trait.WidgetConfig.html"><code>WidgetConfig</code></a>).</p>
-<h4><a class="header" href="#the-key-message" id="the-key-message">The Key message</a></h4>
-<p>One last thing to notice from the above snippet is that each button returns
-some variant of the <code>Key</code> enum as its message when pressed. We should go ahead
-and define this:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">use kas::prelude::*;
-</span>#[derive(Clone, Debug, VoidMsg)]
+#[derive(Clone, Debug)]
 enum Key {
-    Clear,
-    Divide,
-    Multiply,
-    Subtract,
-    Add,
-    Equals,
-    Char(char),
+    Clear, DelBack, Divide, Multiply, Subtract, Add, Equals, Char(char),
 }
-<span class="boring">}
-</span></code></pre></pre>
-<p>The only thing of note here is that <code>Key</code> uses <code>derive(VoidMsg)</code>: this is a
-macro which implements <code>From&lt;VoidMsg&gt;</code> for the type. All message types should
-do this.</p>
-<h2><a class="header" href="#building-our-calculator" id="building-our-calculator">Building our calculator</a></h2>
-<p>Now, lets put our buttons in a calculator:</p>
-<pre><pre class="playground"><code class="language-rust"><span class="boring">use kas::prelude::*;
-</span><span class="boring">use kas::widgets::{EditBox, TextButton, Window};
-</span><span class="boring">use kas::event::VirtualKeyCode as VK;
-</span><span class="boring">#[derive(Debug)]
-</span><span class="boring">struct Calculator;
-</span><span class="boring">impl Calculator {
-</span><span class="boring">   fn new() -&gt; Self { Calculator }
-</span><span class="boring">   fn display(&amp;self) -&gt; String { String::new() }
-</span><span class="boring">   fn handle(&amp;mut self, _msg: Key) -&gt; bool { false }
-</span><span class="boring">}
-</span><span class="boring">#[derive(Clone, Debug, VoidMsg)]
-</span><span class="boring">enum Key {
-</span><span class="boring">   Clear,
-</span><span class="boring">   Divide,
-</span><span class="boring">   Multiply,
-</span><span class="boring">   Subtract,
-</span><span class="boring">   Add,
-</span><span class="boring">   Equals,
-</span><span class="boring">   Char(char),
-</span><span class="boring">}
-</span>fn main() -&gt; Result&lt;(), kas::shell::Error&gt; {
+
+fn main() -&gt; kas::shell::Result&lt;()&gt; {
     env_logger::init();
 
-    // hidden: let buttons = ...;
-<span class="boring">   let buttons = make_widget! {
-</span><span class="boring">       #[layout(grid)]
-</span><span class="boring">       #[handler(msg = Key)]
-</span><span class="boring">       #[widget(config=noauto)]
-</span><span class="boring">       struct {
-</span><span class="boring">           #[widget(col = 0, row = 0)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete]),
-</span><span class="boring">           #[widget(col = 1, row = 0)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;÷&quot;, Key::Divide).with_keys(&amp;[VK::Slash]),
-</span><span class="boring">           #[widget(col = 2, row = 0)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;×&quot;, Key::Multiply).with_keys(&amp;[VK::Asterisk]),
-</span><span class="boring">           #[widget(col = 3, row = 0)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;−&quot;, Key::Subtract),
-</span><span class="boring">           #[widget(col = 0, row = 1)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;7&quot;, Key::Char('7')),
-</span><span class="boring">           #[widget(col = 1, row = 1)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;8&quot;, Key::Char('8')),
-</span><span class="boring">           #[widget(col = 2, row = 1)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;9&quot;, Key::Char('9')),
-</span><span class="boring">           #[widget(col = 3, row = 1, rspan = 2, align = stretch)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;+&quot;, Key::Add),
-</span><span class="boring">           #[widget(col = 0, row = 2)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;4&quot;, Key::Char('4')),
-</span><span class="boring">           #[widget(col = 1, row = 2)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;5&quot;, Key::Char('5')),
-</span><span class="boring">           #[widget(col = 2, row = 2)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;6&quot;, Key::Char('6')),
-</span><span class="boring">           #[widget(col = 0, row = 3)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;1&quot;, Key::Char('1')),
-</span><span class="boring">           #[widget(col = 1, row = 3)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;2&quot;, Key::Char('2')),
-</span><span class="boring">           #[widget(col = 2, row = 3)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;3&quot;, Key::Char('3')),
-</span><span class="boring">           #[widget(col = 3, row = 3, rspan = 2, align = stretch)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals).with_keys(&amp;[VK::Return, VK::NumpadEnter]),
-</span><span class="boring">           #[widget(col = 0, row = 4, cspan = 2)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;0&quot;, Key::Char('0')),
-</span><span class="boring">           #[widget(col = 2, row = 4)]
-</span><span class="boring">           _ = TextButton::new_msg(&quot;&amp;.&quot;, Key::Char('.')),
-</span><span class="boring">       }
-</span><span class="boring">       impl kas::WidgetConfig {
-</span><span class="boring">           fn configure(&amp;mut self, mgr: &amp;mut Manager) {
-</span><span class="boring">               // Enable key bindings without Alt held:
-</span><span class="boring">               mgr.enable_alt_bypass(true);
-</span><span class="boring">           }
-</span><span class="boring">       }
-</span><span class="boring">   };
-</span>
-    let content = make_widget! {
-        #[layout(column)]
-        #[handler(msg = VoidMsg)]
-        struct {
-            #[widget] display: impl HasString = EditBox::new(&quot;0&quot;).editable(false).multi_line(true),
-            #[widget(handler = handle_button)] buttons -&gt; Key = buttons,
+    impl_scope! {
+        #[widget{
+            layout = grid: {
+                0, 0: TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete]);
+                1, 0: TextButton::new_msg(&quot;&amp;÷&quot;, Key::Divide).with_keys(&amp;[VK::Slash]);
+                2, 0: TextButton::new_msg(&quot;&amp;×&quot;, Key::Multiply).with_keys(&amp;[VK::Asterisk]);
+                3, 0: TextButton::new_msg(&quot;&amp;−&quot;, Key::Subtract);
+                0, 1: TextButton::new_msg(&quot;&amp;7&quot;, Key::Char('7'));
+                1, 1: TextButton::new_msg(&quot;&amp;8&quot;, Key::Char('8'));
+                2, 1: TextButton::new_msg(&quot;&amp;9&quot;, Key::Char('9'));
+                3, 1..3: TextButton::new_msg(&quot;&amp;+&quot;, Key::Add);
+                0, 2: TextButton::new_msg(&quot;&amp;4&quot;, Key::Char('4'));
+                1, 2: TextButton::new_msg(&quot;&amp;5&quot;, Key::Char('5'));
+                2, 2: TextButton::new_msg(&quot;&amp;6&quot;, Key::Char('6'));
+                0, 3: TextButton::new_msg(&quot;&amp;1&quot;, Key::Char('1'));
+                1, 3: TextButton::new_msg(&quot;&amp;2&quot;, Key::Char('2'));
+                2, 3: TextButton::new_msg(&quot;&amp;3&quot;, Key::Char('3'));
+                3, 3..5:  TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals)
+                    .with_keys(&amp;[VK::Return, VK::NumpadEnter]);
+                0..2, 4: TextButton::new_msg(&quot;&amp;0&quot;, Key::Char('0'));
+                2, 4: TextButton::new_msg(&quot;&amp;.&quot;, Key::Char('.'));
+            };
+        }]
+        #[derive(Debug, Default)]
+        struct Buttons(widget_core!());
+    };
+
+    impl_scope! {
+        #[impl_default]
+        #[widget{
+            layout = column: [
+                self.display,
+                Buttons::default(),
+            ];
+        }]
+        #[derive(Debug)]
+        struct CalcUI {
+            core: widget_core!(),
+            #[widget] display: EditBox = EditBox::new(&quot;0&quot;)
+                .with_editable(false)
+                .with_multi_line(true)
+                .with_lines(3, 3)
+                .with_width_em(5.0, 10.0),
             calc: Calculator = Calculator::new(),
         }
-        impl {
-            fn handle_button(&amp;mut self, mgr: &amp;mut Manager, msg: Key) -&gt; Response&lt;VoidMsg&gt; {
-                if self.calc.handle(msg) {
-                    *mgr |= self.display.set_string(self.calc.display());
+        impl Widget for Self {
+            fn configure(&amp;mut self, mgr: &amp;mut ConfigMgr) {
+                mgr.disable_nav_focus(true);
+
+                // Enable key bindings without Alt held:
+                mgr.enable_alt_bypass(self.id_ref(), true);
+
+                mgr.register_nav_fallback(self.id());
+            }
+
+            fn handle_event(&amp;mut self, mgr: &amp;mut EventMgr, event: Event) -&gt; Response {
+                match event {
+                    Event::Command(Command::DelBack) =&gt; {
+                        if self.calc.handle(Key::DelBack) {
+                            *mgr |= self.display.set_string(self.calc.display());
+                        }
+                        Response::Used
+                    }
+                    _ =&gt; Response::Unused,
                 }
-                Response::None
+            }
+
+            fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
+                if let Some(msg) = mgr.try_pop_msg::&lt;Key&gt;() {
+                    if self.calc.handle(msg) {
+                        *mgr |= self.display.set_string(self.calc.display());
+                    }
+                }
             }
         }
-    };
-    let window = Window::new(&quot;Calculator&quot;, content);
+        impl Window for Self {
+            fn title(&amp;self) -&gt; &amp;str { &quot;Calculator&quot; }
+        }
+    }
 
-    let theme = kas::theme::FlatTheme::new().with_font_size(16.0);
-    kas::shell::Toolkit::new(theme)?.with(window)?.run()
+    let theme = kas::theme::ShadedTheme::new().with_font_size(16.0);
+    kas::shell::Toolkit::new(theme)?
+        .with(CalcUI::default())?
+        .run()
+}
+
+#[derive(Clone, Debug)]
+struct Calculator {
+    // ...
+}
+
+impl Calculator {
+    fn new() -&gt; Calculator {
+        Calculator {}
+    }
+
+    fn display(&amp;self) -&gt; String {
+        todo!()
+    }
+
+    // return true if display changes
+    fn handle(&amp;mut self, key: Key) -&gt; bool {
+        todo!()
+    }
 }
 </code></pre></pre>
-<p>By now, most of this code should be clear enough, but a few things are worth
-mentioning:</p>
-<ul>
-<li>We use an <code>EditBox</code> instead of a <code>Label</code> for our display</li>
-<li>Instead of giving <code>display</code> an explicit type, we write <code>display: impl HasString</code>.
-This mirrors Rust's &quot;argument position impl trait&quot; (APIT) syntax, and just
-means that <code>display</code> has some unnamed type which implements <code>HasString</code>.</li>
-<li><code>buttons -&gt; Key</code> is a different kind of type-restriction, only usable on
-widgets, which says that the type is some widget with message type <code>Key</code></li>
-</ul>
-<p>The calculator logic itself is pushed into the <code>Calculator</code> struct, with
-interaction limited to <code>new</code>, <code>handle(msg)</code> and <code>display</code> methods. Implementing
-this is left as an exercise to the user (you have 106 lines left to fit within
-our arbitrary goal of &quot;under 200 lines&quot;).</p>
-<h2><a class="header" href="#conclusion" id="conclusion">Conclusion</a></h2>
-<p>The full code for our example <a href="https://github.com/kas-gui/tutorials/blob/master/examples/calculator.rs">can be found here</a>.
-Run it with:</p>
-<pre><code class="language-sh">cargo run --example calculator
+<h2><a class="header" href="#button-grid" id="button-grid">Button grid</a></h2>
+<p>Q: What does a calculator have that a counter doesn't?<br />
+A: More buttons!</p>
+<p>We define these within <code>layout = grid: { ... }</code>. Each cell has syntax
+<code>cols, rows: widget;</code> where <code>cols</code> and <code>rows</code> are defined by a range or an
+index (where <code>n</code> expands to <code>n..n+1</code>).</p>
+<h2><a class="header" href="#key-bindings" id="key-bindings">Key bindings</a></h2>
+<p>Standard UIs allow navigation via the <kbd>Tab</kbd> key. We disable this
+completely (<a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.disable_nav_focus"><code>ConfigMgr::disable_nav_focus</code></a>).</p>
+<p>Instead, we give each button one or more accelerator keys. These are
+key shortcuts usually used on menus, with the <kbd>Alt</kbd> key held.
+To avoid requiring <kbd>Alt</kbd>, we enable &quot;alt bypass&quot; mode
+(<a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.enable_alt_bypass"><code>ConfigMgr::enable_alt_bypass</code></a>).</p>
+<p>Finally, we assign our widget as the &quot;nav fallback&quot; (<a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.register_nav_fallback"><code>ConfigMgr::register_nav_fallback</code></a>)
+and define a handler for the <kbd>Backspace</kbd> key (in [<code>Widget::handle_event</code>]),
+which does not have a button.</p>
+<pre><code class="language-rust ignore">impl Widget for Self {
+    fn configure(&amp;mut self, mgr: &amp;mut ConfigMgr) {
+        mgr.disable_nav_focus(true);
+
+        // Enable key bindings without Alt held:
+        mgr.enable_alt_bypass(self.id_ref(), true);
+
+        mgr.register_nav_fallback(self.id());
+    }
+
+    fn handle_event(&amp;mut self, mgr: &amp;mut EventMgr, event: Event) -&gt; Response {
+        match event {
+            Event::Command(Command::DelBack) =&gt; {
+                if self.calc.handle(Key::DelBack) {
+                    *mgr |= self.display.set_string(self.calc.display());
+                }
+                Response::Used
+            }
+            _ =&gt; Response::Unused,
+        }
+    }
+}
 </code></pre>
-<p>We introduced the <code>grid</code> layout, the <code>make_widget</code> macro and implemented a
-significantly more complex app than the previous tutorial's counter.</p>
-<p>This tutorial series has now introduced all three of KAS's macros, but without
-refering to an API reference. If you've been using Rust (or other programming
-languages) for a while you probably know why that is: there isn't a standard way
-to document macros. What there <em>is</em> is the <a href="https://docs.rs/kas/latest/kas/macros/index.html"><code>kas::macros</code></a> module documentation,
-but, like most macro documentation, it is more &quot;by example&quot; than a true
-reference.</p>
+<p><a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> supports two methods of defining accelerator keys, as exemplified
+by the <code>clear</code> button:</p>
+<pre><code class="language-ignore">0, 0: TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete]);
+</code></pre>
+<p>The label is an <a href="https://docs.rs/kas/latest/kas/text/struct.AccelString.html"><code>AccelString</code></a>, which supports simple mark-up: <code>&amp;c</code> adds a
+binding to <kbd>c</kbd> and is displayed as <code>c</code> (with an underline when
+<kbd>Alt</kbd> is held).</p>
+<p><a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html#method.with_keys"><code>TextButton::with_keys</code></a> explicitly assigns additional key bindings.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="counter2.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="counter.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
@@ -446,7 +345,7 @@ reference.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="counter2.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="counter.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
