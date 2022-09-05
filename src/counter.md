@@ -1,6 +1,6 @@
 # Counter: a simple widget
 
-*Topics: prelude, `impl_scope!` and `#[widget]` macros, messages*
+*Topics: prelude, `impl_scope!` and `#[widget]` macros, messages, [`Window`] trait*
 
 ![Counter](screenshots/counter.png)
 
@@ -219,6 +219,17 @@ something like this:
 ```
 Now perhaps you see why we defined our `Increment` type and didn't simply push an `i32`!
 
+## Window
+
+Windows must implement the [`Window`] trait. We could use
+[`kas::widgets::dialog::Window`](https://docs.rs/kas/latest/kas/widgets/dialog/struct.Window.html),
+but implementing [`Window`] on a custom widget is very easy:
+```rust,ignore
+impl Window for Self {
+    fn title(&self) -> &str { "Counter" }
+}
+```
+
 [`kas::prelude`]: https://docs.rs/kas/latest/kas/prelude/index.html
 [`Clone`]: https://doc.rust-lang.org/stable/std/clone/trait.Clone.html
 [`Debug`]: https://doc.rust-lang.org/stable/std/fmt/trait.Debug.html
@@ -237,3 +248,4 @@ Now perhaps you see why we defined our `Increment` type and didn't simply push a
 [`HasString::set_string`]: https://docs.rs/kas/latest/kas/class/trait.HasString.html#tymethod.set_string
 [`TkAction`]: https://docs.rs/kas/latest/kas/struct.TkAction.html
 [`EventState::send_action`]: https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.send_action
+[`Window`]: https://docs.rs/kas/latest/kas/trait.Window.html
