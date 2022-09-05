@@ -1,5 +1,7 @@
 # Hello World!
 
+*Topics: logging, shell, run*
+
 ![Hello](screenshots/hello.png)
 
 Lets get started with a simple message box.
@@ -9,6 +11,8 @@ Lets get started with a simple message box.
 use kas::widgets::dialog::MessageBox;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::init();
+
     let window = MessageBox::new("Message", "Hello world");
 
     let theme = kas::theme::FlatTheme::new();
@@ -20,26 +24,60 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 cargo run --example hello
 ```
 
-Lets start from the bottom up...
+## Logging
 
-`kas::shell::Toolkit` is the "shell", providing bindings to windowing and
+Enabling a logger is optional, but can be very useful for debugging:
+```rust
+env_logger::init();
+```
+KAS uses the [`log`](https://crates.io/crates/log) facade internally. To see the
+output, we need an implementation, such as
+[`env_logger`](https://crates.io/crates/env_logger).
+
+Trace level can be a bit chatty; to get a *reasonable* level of output you might
+try this:
+```sh
+export RUST_LOG=warn,naga=error,kas=debug
+cargo run --example hello
+```
+
+## A window, a shell
+
+Next, we define our window. For this example, we use [`kas::widgets::dialog::MessageBox`].
+```rust
+# use kas::widgets::dialog::MessageBox;
+let window = MessageBox::new("Message", "Hello world");
+```
+This line doesn't actually *do* anything besides creating a "window" object.
+A window is any type implementing the [`Window`] trait.
+
+```rust
+# use kas::widgets::dialog::MessageBox;
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+# let window = MessageBox::new("Message", "Hello world");
+let theme = kas::theme::FlatTheme::new();
+kas::shell::Toolkit::new(theme)?.with(window)?.run()
+# }
+```
+
+[`kas::shell::Toolkit`] is the "shell", providing bindings to windowing and
 graphics functionality (at the time of writing, via Winit and WGPU).
 One *could* write their own shell (e.g. to embed KAS), but that would be an
 advanced topic (and breaking new ground).
 
 High-level drawing and sizing is handled by a "theme", which we provide to the
 toolkit. Writing a custom theme is another advanced (but better tested) topic.
+Here we just use [`FlatTheme`].
 
-[`Toolkit::with`] expects a `dyn` [`Window`] object; we use [`MessageBox`].
+Finally, [`Toolkit::run`] starts our UI. This method does not return (see
+[`winit::event_loop::EventLoop::run`] documentation).
 
-Finally, [`Toolkit::run`] starts our UI. This method does not return (it uses
-[`winit::event_loop::EventLoop::run`]).
-The program will exit after all windows have closed.
+The toolkit (and program) will exit after all windows have closed.
 
-[`env_logger`]: https://docs.rs/env_logger
-[`winit::event_loop::EventLoop::run`]: https://docs.rs/winit/0.24/winit/event_loop/struct.EventLoop.html#method.run
-[`env_logger::init`]: https://docs.rs/env_logger/0.8/env_logger/fn.init.html
-[`kas_theme::ShadedTheme`]: https://docs.rs/kas-theme/latest/kas_theme/struct.ShadedTheme.html
-[`kas_wgpu::Toolkit`]: https://docs.rs/kas-wgpu/latest/kas_wgpu/struct.Toolkit.html
-[`TextButton`]: https://docs.rs/kas/latest/kas/widget/struct.TextButton.html
-[`Manager`]: https://docs.rs/kas/latest/kas/event/struct.Manager.html
+[`winit::event_loop::EventLoop::run`]: https://docs.rs/winit/latest/winit/event_loop/struct.EventLoop.html#method.run
+[`kas_theme::FlatTheme`]: https://docs.rs/kas-theme/latest/kas_theme/struct.FlatTheme.html
+[`kas::shell::Toolkit`]: https://docs.rs/kas/latest/kas/shell/struct.Toolkit.html
+[`Toolkit::run`]: https://docs.rs/kas/latest/kas/shell/struct.Toolkit.html#method.run
+[`kas::widgets::dialog::MessageBox`]: https://docs.rs/kas/latest/kas/widgets/dialog/struct.MessageBox.html
+[`Window`]: https://docs.rs/kas/latest/kas/trait.Window.html
+[`FlatTheme`]: https://docs.rs/kas/latest/kas/theme/struct.FlatTheme.html
