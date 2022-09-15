@@ -20,81 +20,19 @@ use kas::widgets::{Label, TextButton};
 The [`kas::prelude`] includes a bunch of commonly-used, faily unambiguous stuff.
 Besides that, we only use a couple of widgets.
 
-## Defining Counter with the help of macros
+## Macros
 
+### `impl_scope`
+
+We define our `Counter` widget within an [`impl_scope!`]:
 ```rust
 # use kas::prelude::*;
-# use kas::widgets::{Label, TextButton};
-# #[derive(Clone, Debug)] struct Increment(i32);
+# use kas::widgets::Label;
 impl_scope! {
-    #[widget{
-        layout = column: [
-            align(center): self.display,
-            row: [
-                TextButton::new_msg("−", Increment(-1)),
-                TextButton::new_msg("+", Increment(1)),
-            ],
-        ];
-    }]
     #[derive(Debug)]
     struct Counter {
-        core: widget_core!(),
-        #[widget]
-        display: Label<String>,
-        count: i32,
-    }
-}
-```
-
-### Macros
-
-The above snippet includes five macro usages:
-
-1.  [`impl_scope!`] is a proc-macro which:
-
-    -   encompasses a type definition (enum/struct/type alias/union) and `impl` blocks
-    -   provides `impl Self` syntax (`Self` expands to the type's name, with correct
-        handling of generic parameters and bounds)
-    -   supports some attribute macros with slightly non-standard behaviour
-
-2.  The `#[widget { layout = ..; }]` attribute macro ([`kas::macros::widget`]) is used to
-    implement [`Widget`] for `struct Counter`. Note that this is the only
-    supported method of implementing the [`Widget`] trait family (including
-    super traits). Further note that this macro may only be used within an `impl_scope!`.
-
-3.  `#[derive(Debug)]` — you already know this.
-
-4.  `widget_core!()` is a type generator. This is not a stand-alone macro, but a
-    marker substituted by the `#[widget]` macro (2). Every widget must have one
-    field with this type. The substition may be the [`CoreData`] type or may be
-    a generated type with the same `rect: Rect` and `id: WidgetId` fields (which
-    may be accessed directly). The type always supports [`Debug`], [`Default`]
-    and [`Clone`].
-
-5.  `#[widget] display: Label<String>` is also a marker supported by the outer
-    `#[widget]` attribute macro (2). This attribute may appear on a field to
-    mark this field as a child widget (and is thus configured correctly).
-
-### Constructor and layout
-
-```rust
-# use kas::prelude::*;
-# use kas::widgets::{Label, TextButton};
-# #[derive(Clone, Debug)] struct Increment(i32);
-impl_scope! {
-    #[widget{
-        layout = column: [
-            align(center): self.display,
-            row: [
-                TextButton::new_msg("−", Increment(-1)),
-                TextButton::new_msg("+", Increment(1)),
-            ],
-        ];
-    }]
-    #[derive(Debug)]
-    struct Counter {
-        core: widget_core!(),
-        #[widget]
+        // core: widget_core!(),
+        // #[widget]
         display: Label<String>,
         count: i32,
     }
@@ -102,42 +40,115 @@ impl_scope! {
     impl Self {
         fn new(count: i32) -> Self {
             Counter {
-                core: Default::default(),
+                // core: Default::default(),
                 display: Label::from(count.to_string()),
                 count,
             }
         }
     }
-};
+}
+```
+This is a macro provided by the [impl-tools] library which wraps a type
+definition (struct, enum, type alias or union) along with `impl` blocks for this
+type. We use [`impl_scope!`] for the following:
+
+-   `impl Self` syntax (equivalent to `impl Counter` here)
+-   to support the `#[widget]` macro, which is affected by `impl` blocks within the scope
+
+### `#[widget]`
+
+The `#[widget]` attribute macro is used to implement the [`Widget`] trait (this
+is the only supported method of implementing [`Widget`]). This attribute appears
+on a struct (or tuple struct) definition within an [`impl_scope!`]:
+
+```rust
+# use kas::prelude::*;
+# use kas::widgets::{Label, TextButton};
+# #[derive(Clone, Debug)] struct Increment(i32);
+impl_scope! {
+    #[widget{
+        layout = column: [
+            align(center): self.display,
+            row: [
+                TextButton::new_msg("−", Increment(-1)),
+                TextButton::new_msg("+", Increment(1)),
+            ],
+        ];
+    }]
+    #[derive(Debug)]
+    struct Counter {
+        core: widget_core!(),
+        #[widget] display: Label<String>,
+        count: i32,
+    }
+
+    impl Widget for Self {
+        fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
+            if let Some(Increment(incr)) = mgr.try_pop_msg() {
+                self.count += incr;
+                *mgr |= self.display.set_string(self.count.to_string());
+            }
+        }
+    }
+}
 ```
 
-First note the simple constructor: `fn Counter::new`. (Reminder: `impl Self`
-is expanded to `impl Counter` by the `impl_scope!` macro.)
+First note: using `#[widget]` on `struct Counter` implements the [`Widget`]
+trait, yet we `impl Widget` for `Counter` anyway. As noted above, the
+`#[widget]` macro is able to read this `impl` block (since it is within the same
+[`impl_scope!`]) and can adjust it (injecting extra methods as necessary).
 
-Our widget's layout is here defined by the `layout = ..` parameter.
-(An alternative is to implement [`Layout`] directly.)
-The `layout` syntax is new, but should be easy to understand:
+#### Properties and layout
 
--   Our top layout is a `column` containing ...
--   ... the field `self.display`, annotated with `align(center)` ...
--   ... and a `row` of two [`TextButton`] widgets
+The `#[widget]` attribute macro supports parameters; here we use the `layout`
+parameter to define the widget's **layout**. For a reference, see
+[`kas::macros::widget`].
 
-In general, layout syntax is one of four things:
+In this case, the layout is a column over `self.display` (centred) and
+a row over two [`TextButton`] widgets.
 
--   a keyword such as `column` or `align(..)`, followed by a `:` and some
-    sub-layout (or list of sub-layouts)
--   `self.foo` where `foo` is a field implementing [`Layout`] (possibly but not necessarily a widget)
--   `Foo::new(..)` where `Foo` is a type name (starting upper-case), the type is
-    a [`Widget`], and the whole expression `Foo::new(..)` constructs an object
-    which coerces to `dyn Widget`
--   `"blah blah"` — a simple label
+Note that there are three syntaxes for placing child items (widgets) within the layout:
 
-It's a *bit* more complex than this, but that should get you started. You can
-read the reference here: [`kas::macros::widget`].
+-   `"a string"` — generates a simple label widget (unlike [`Label`], this does
+    not enable line wrapping)
+-   `self.foo` — embeds a field (where `foo` is either a widget or just a type
+    implementing [`Layout`])
+-   `Foo::bar()` where `Foo` is a widget type (must be in scope and start with
+    an upper-case letter) and `Foo::bar()` constructs an instance of this type
+
+#### Core
+
+Struct `Counter` has field `core: widget_core!()`. This macro is a type
+generator. It is not a stand-alone macro, but a marker substituted by the
+`#[widget]`. Every widget must have one field with this type.
+
+The substition may be the [`CoreData`] type or may be a generated type with the
+same `rect: Rect` and `id: WidgetId` fields (which may be accessed directly).
+The type always supports [`Debug`], [`Default`] and [`Clone`].
 
 Aside: since KAS is a *stateful* UI system, the [`TextButton`] widgets in our
 row must be stored *somewhere*, right? Yes: in the `widget_core!` field
 (a generated type).
+
+#### Child widgets
+
+Other than when embedded directly in the layout (as with the [`TextButton`]s),
+child widgets are a field marked by `#[widget]`:
+```ignore
+struct Counter {
+    #[widget] display: Label<String>,
+    // ...
+}
+```
+This usage of `#[widget]` is another marker supported by the `#[widget]` macro
+(on the type).
+
+Note that any object supporting [`Layout`] may appear in the layout, but that
+fields which are widgets must carry the `#[widget]` marker. This notifies that
+the field implements [`Widget`] and must be initialized ([`Widget::configure`]).
+If `#[widget]` is missing on a visible widget, you will get a crash when the
+mouse moves over the widget and the event handler resolves an uninitialized
+[`WidgetId`].
 
 ## Messages
 
@@ -156,57 +167,42 @@ named type provides useful documentation, especially in log messages.
 
 ### The message stack
 
-Our button widgets are constructed using [`TextButton::new_msg`].
-Referring to the [`TextButton`] documentation (or the source) we see that
-this is equivalent to `TextButton::new("+").on_push(|mgr| mgr.push_msg(Increment(1)))`,
-using the method [`EventMgr::push_msg`], which pushes to the "message stack".
+Our button widgets are constructed using [`TextButton::new_msg`], the first of which is
+equivalent to `TextButton::new("+").on_push(|mgr| mgr.push_msg(Increment(1)))`:
+a button with label "+" and a closure called "on push".
 
 KAS's [event-handling model is described here](https://docs.rs/kas/latest/kas/event/index.html#event-handling-model).
-The relevant parts to our example are:
+In our example:
 
-1.  On activation (via mouse click or keyboard), [`TextButton`]'s handler is called.
-2.  This handler calls [`EventMgr::push_msg`] to push `Increment(1)` to
+1.  When the button is clicked or otherwise activated an [`Event`] is sent
+    (via tree traversal: the root widget, our `Counter` widget, the [`TextButton`])
+2.  If this is an "activation" event ([`Event::on_activate`]), then the [`TextButton`]
+    calls its "push" closure (note to self: consider renaming to "press")
+3.  This closure calls [`EventMgr::push_msg`], pushing `Increment(1)` to
     the message stack.
-3.  While the message stack is non-empty, [`Widget::handle_message`] is called
-    on *each* ancestor of the `TextButton` widget.
-4.  Our `Counter` should implement this method, using [`EventMgr::try_pop_msg`]
-    to retrieve the message from the stack.
+4.  The message is sent back via reverse tree traversal. At each step, if the
+    message stack is non-empty, [`Widget::handle_message`] is called (thus
+    `Counter::handle_message` is called).
+5.  Our `Counter` uses [`EventMgr::try_pop_msg`] to retrieve a message of type
+    `Increment` from the stack and updates the counter accordingly.
 
-### Handling messages
-
-Lets implement [`Widget::handle_message`] on `Counter`:
-```rust
-# use kas::prelude::*;
-# use kas::widgets::{Label, TextButton};
-# #[derive(Clone, Debug)] struct Increment(i32);
-impl_scope! {
-    #[widget{
-        layout = column: [
-            align(center): self.display,
-            row: [TextButton::new_msg("−", Increment(-1)), TextButton::new_msg("+", Increment(1))],
-        ];
-    }]
-    #[derive(Debug)]
-    struct Counter {
-        core: widget_core!(),
-        #[widget]
-        display: Label<String>,
-        count: i32,
+`Counter::handle_message` is implemented above. Lets see it again:
+```rust,ignore
+fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
+    if let Some(Increment(incr)) = mgr.try_pop_msg() {
+        self.count += incr;
+        *mgr |= self.display.set_string(self.count.to_string());
     }
-    impl Widget for Self {
-        fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
-            if let Some(Increment(incr)) = mgr.try_pop_msg() {
-                self.count += incr;
-                *mgr |= self.display.set_string(self.count.to_string());
-            }
-        }
-    }
-};
+}
 ```
-
-The method [`HasString::set_string`] returns a [`TkAction`] (to notify that a
-redraw is required). [`TkAction`] is a `#[must_use`] type which should be fed
+The method [`HasString::set_string`] called on `self.display` returns a
+[`TkAction`]; this return value notifies that a redraw is required.
+[`TkAction`] is a `#[must_use`] type which should be fed
 to [`EventState::send_action`], or equivalently: `*mgr |= action`.
+
+And, yes, we update the state of `self.display` by hand here. Is this strategy
+likely to lead to out-of-sync state in complex UIs? Probably. KAS offers a
+solution to this which will be seen in the next example: `sync-counter`.
 
 #### Unhandled messages
 
@@ -223,9 +219,9 @@ Now perhaps you see why we defined our `Increment` type and didn't simply push a
 
 Windows must implement the [`Window`] trait. We could use
 [`kas::widgets::dialog::Window`](https://docs.rs/kas/latest/kas/widgets/dialog/struct.Window.html),
-but implementing [`Window`] on a custom widget is very easy:
+but implementing [`Window`] on our widget is very easy:
 ```rust,ignore
-impl Window for Self {
+impl Window for Counter {
     fn title(&self) -> &str { "Counter" }
 }
 ```
@@ -238,6 +234,7 @@ impl Window for Self {
 [`Widget::handle_message`]: https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_message
 [`Layout`]: https://docs.rs/kas/latest/kas/trait.Layout.html
 [`impl_scope!`]: https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html
+[impl-tools]: https://crates.io/crates/impl-tools
 [`kas::macros::widget`]: https://docs.rs/kas/latest/kas/macros/attr.widget.html
 [`CoreData`]: https://docs.rs/kas/latest/kas/struct.CoreData.html
 [`TextButton`]: https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html
@@ -249,3 +246,7 @@ impl Window for Self {
 [`TkAction`]: https://docs.rs/kas/latest/kas/struct.TkAction.html
 [`EventState::send_action`]: https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.send_action
 [`Window`]: https://docs.rs/kas/latest/kas/trait.Window.html
+[`Label`]: https://docs.rs/kas/latest/kas/widgets/struct.Label.html
+[`WidgetId`]: https://docs.rs/kas/latest/kas/struct.WidgetId.html
+[`Event`]: https://docs.rs/kas/latest/kas/event/enum.Event.html
+[`Event::on_activate`]: https://docs.rs/kas/latest/kas/event/enum.Event.html#method.on_activate
