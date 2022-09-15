@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - KAS tutorials</title>
+        <title>Sync-counter: view widgets - KAS tutorials</title>
         
         
 
@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html" class="active"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: a simple widget</a></li><li class="chapter-item expanded "><a href="sync-counter.html"><strong aria-hidden="true">4.</strong> Sync-counter: view widgets</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">5.</strong> Calculator: make_widget and grid</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: a simple widget</a></li><li class="chapter-item expanded "><a href="sync-counter.html" class="active"><strong aria-hidden="true">4.</strong> Sync-counter: view widgets</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">5.</strong> Calculator: make_widget and grid</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -155,69 +155,103 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#kas-tutorials" id="kas-tutorials">KAS Tutorials</a></h1>
-<p>These tutorials concern the <a href="https://github.com/kas-gui/kas">KAS GUI system</a>.
-See also the <a href="https://github.com/kas-gui/kas/tree/master/kas-wgpu/examples">KAS examples</a>
-and <a href="https://github.com/kas-gui/7guis/">7GUIs examples</a>.</p>
-<p>Further reading can be found on the <a href="https://kas-gui.github.io/blog/">KAS blog</a>.</p>
-<p>Please ask questions on the <a href="https://github.com/kas-gui/tutorials/discussions/">discussion boards</a>
-or on the <a href="https://github.com/kas-gui/tutorials/discussions/1">tutorials issue tracker</a>.</p>
-<h2><a class="header" href="#requirements" id="requirements">Requirements</a></h2>
-<p>It is assumed that you are already familiar with <a href="https://www.rust-lang.org/">the Rust language</a>.
-If not, then <a href="https://www.rust-lang.org/learn">Learn Rust</a>!
-You are not expected to master Rust before learning KAS, but this tutorial
-series assumes a moderate understanding of the language.</p>
-<p>KAS supports both <strong>nightly</strong> and <strong>stable</strong> Rust. Due to the nature of
-procedural macros, better diagnostics are available when using <strong>nightly</strong>.</p>
-<p>Tutorials use the latest stable release of <a href="https://github.com/kas-gui/kas">KAS</a>,
-currently v0.11.</p>
-<h2><a class="header" href="#examples" id="examples">Examples</a></h2>
-<p>All significant examples can be found as working apps in <a href="https://github.com/kas-gui/tutorials/tree/master/examples">the example directory</a>.</p>
-<p>To run the examples locally, check out the <code>tutorials</code> repository, then run e.g.:</p>
-<pre><code class="language-sh">git clone https://github.com/kas-gui/tutorials.git
-cd tutorials
-cargo run --example counter
+                        <h1><a class="header" href="#sync-counter-view-widgets" id="sync-counter-view-widgets">Sync-counter: view widgets</a></h1>
+<p><em>Topics: simple data models and view widgets</em></p>
+<h2><a class="header" href="#data-models" id="data-models">Data models</a></h2>
+<p>In the previous example, <code>Counter</code> has these two fields:</p>
+<pre><code class="language-rust ignore">struct Counter {
+    // ...
+    #[widget] display: Label&lt;String&gt;,
+    count: i32,
+}
 </code></pre>
-<h2><a class="header" href="#kas" id="kas">KAS</a></h2>
-<p>What is <code>kas</code>? Here is a heavily-reduced dependency tree:</p>
-<pre><code class="language-plain">kas — Wrapper crate to expose all components under a single API
-├── kas-core — Core types, traits and event handling
-│   ├── easy-cast — Numeric type-casting, re-exposed as kas::cast
-│   ├── kas-macros (proc-macro) — Macros
-│   │   └── impl-tools-lib — Backend used to implement macros
-│   ├── kas-text — Font handling, type setting
-│   │   ├── ab_glyph — Glyph rastering
-│   │   ├── harfbuzz_rs — Shaping (optional)
-│   │   ├── pulldown-cmark — Markdown parsing (optional)
-│   │   └── rustybuzz — Shaping (optional, default)
-│   ├── log — Logging facade
-│   ├── serde — Serialization support for persistent configuration (optional)
-│   ├── serde_json, serde_yaml, ron — Output formats for configuration (optional)
-│   └── winit — (a dependency here for event-handling code)
-├── kas-widgets — Standard widget collection
-├── kas-resvg — Canvas and Svg widgets
-│   ├── resvg — An SVG rendering library
-│   └── tiny-skia — Tiny CPU-only Skia subset
-├── kas-view — &quot;View widgets&quot; over synchronized data models (optional)
-└── kas-wgpu — Shell over Winit and WGPU; draw API implementation
-    ├── kas-theme — Theme API and implementations
-    │   └── dark-light — Dark/light theme detection
-    ├── wgpu — Rusty WebGPU API wrapper
-    ├── window_clipboard — Clipboard integration
-    └── winit — Cross-platform window creation
+<p>But, given that <code>display</code> is always supposed to show the value of <code>count</code>,
+can we combine them? Yes!</p>
+<p>First, we need a data item. This should implement the <a href="https://docs.rs/kas/latest/kas/model/trait.SingleData.html"><code>SingleData</code></a> trait
+(or rather, its base <a href="https://docs.rs/kas/latest/kas/model/trait.SharedData.html"><code>SharedData</code></a>). The latter trait looks a little complex, but for
+a single data item <code>Key = ()</code> and <code>data.contains_key(&amp;())</code> will always return
+true. <code>data.get_cloned(&amp;())</code> simply returns a clone of the data item.
+The only unexpected complexity is the synchronisation mechanism.</p>
+<p>We could implement a suitable type ourselves, but <a href="https://docs.rs/kas/latest/kas/model/struct.SharedRc.html"><code>SharedRc</code></a> does what we
+want. We use <code>SharedRc&lt;i32&gt;</code> as our data type.</p>
+<h3><a class="header" href="#data-views" id="data-views">Data views</a></h3>
+<p>On its own, using a data model isn't useful, but it allows us to use view
+widgets. <a href="https://docs.rs/kas/latest/kas/view/struct.SingleView.html"><code>SingleView</code></a> is a &quot;view controller&quot; which constructs and updates a
+&quot;view widget&quot; over its data model using a <a href="https://docs.rs/kas/latest/kas/view/trait.Driver.html"><code>Driver</code></a>. The default driver,
+<a href="https://docs.rs/kas/latest/kas/view/driver/struct.View.html"><code>driver::View</code></a>, suffices in this case.</p>
+<p>We can adapt the <code>Counter</code> example as follows:</p>
+<pre><code class="language-rust ignore">#[derive(Clone, Debug)]
+struct Counter {
+    core: widget_core!(),
+    #[widget] display: SingleView&lt;SharedRc&lt;i32&gt;&gt;,
+}
+impl Self {
+    fn new(count: i32) -&gt; Self {
+        Counter {
+            core: Default::default(),
+            display: SingleView::new(SharedRc::new(count)),
+        }
+    }
+}
+impl Widget for Self {
+    fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
+        if let Some(Increment(incr)) = mgr.try_pop_msg() {
+            self.display.update_value(mgr, |count| count + incr);
+        }
+    }
+}
 </code></pre>
-<h2><a class="header" href="#licence" id="licence">Licence</a></h2>
-<p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><span property="dct:title">This tutorial, including text but excluding code samples, </span> is licensed under <a href="http://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-SA 4.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1"></a></p> 
-<p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><span property="dct:title">Code samples found within this tutorial</span> are marked with <a href="http://creativecommons.org/publicdomain/zero/1.0?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC0 1.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1"></a></p> 
+<p>Is this change worthwhile on its own? That's debatable: it uses more complex
+types to reduce the risk of de-synchronised data. Its real utility is when that
+data might be accessed from multiple locations.</p>
+<h3><a class="header" href="#multiple-windows" id="multiple-windows">Multiple windows</a></h3>
+<p>We can very easily adapt the above to use multiple instances of the same
+(synchronised) counter:</p>
+<pre><code class="language-rust ignore">    let counter = Counter::new(0);
+    kas::shell::Toolkit::new(theme)?
+        .with(counter.clone())?
+        .with(counter)?
+        .run()
+</code></pre>
+<h2><a class="header" href="#drivers" id="drivers">Drivers</a></h2>
+<p>Why should we implement our own <code>Counter</code> widget when a <a href="https://docs.rs/kas/latest/kas/widgets/struct.Spinner.html"><code>Spinner</code></a> would do the
+same job better?</p>
+<p>Above, we use <a href="https://docs.rs/kas/latest/kas/view/driver/struct.View.html"><code>driver::View</code></a> which constructs a <a href="https://docs.rs/kas/latest/kas/widgets/struct.Label.html"><code>Label</code></a> widget over our
+<code>i32</code> datum. We instead use <a href="https://docs.rs/kas/latest/kas/view/driver/struct.Spinner.html"><code>driver::Spinner</code></a>.</p>
+<p>Unlike our <code>Counter</code> <a href="https://docs.rs/kas/latest/kas/view/struct.SingleView.html"><code>SingleView</code></a> does not support the <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> trait, thus
+we wrap with <a href="https://docs.rs/kas/latest/kas/widgets/dialog/struct.Window.html"><code>dialog::Window</code></a>.</p>
+<p>The complete code for this example is listed below:</p>
+<pre><pre class="playground"><code class="language-rust">use kas::model::SharedRc;
+use kas::view::{driver, SingleView};
+use kas::widgets::dialog::Window;
+
+fn main() -&gt; kas::shell::Result&lt;()&gt; {
+    env_logger::init();
+
+    let driver = driver::Spinner::new(i32::MIN..=i32::MAX, 1);
+    let c1 = SingleView::new_with_driver(driver, SharedRc::new(0));
+    let c2 = SingleView::new_with_driver(driver, c1.data().clone());
+
+    let theme = kas::theme::ShadedTheme::new().with_font_size(24.0);
+    kas::shell::Toolkit::new(theme)?
+        .with(Window::new(&quot;Counter 1&quot;, c1))?
+        .with(Window::new(&quot;Counter 2&quot;, c2))?
+        .run()
+}
+</code></pre></pre>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
+                            <a rel="prev" href="counter.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
 
                         
-                            <a rel="next" href="hello.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="calculator.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -229,9 +263,13 @@ cargo run --example counter
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
+                    <a rel="prev" href="counter.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
 
                 
-                    <a rel="next" href="hello.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="calculator.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

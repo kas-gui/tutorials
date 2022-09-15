@@ -91,7 +91,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: a simple widget</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">4.</strong> Calculator: make_widget and grid</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="hello.html"><strong aria-hidden="true">2.</strong> Hello: push button</a></li><li class="chapter-item expanded "><a href="counter.html"><strong aria-hidden="true">3.</strong> Counter: a simple widget</a></li><li class="chapter-item expanded "><a href="sync-counter.html"><strong aria-hidden="true">4.</strong> Sync-counter: view widgets</a></li><li class="chapter-item expanded "><a href="calculator.html"><strong aria-hidden="true">5.</strong> Calculator: make_widget and grid</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -292,89 +292,19 @@ use kas::widgets::{Label, TextButton};
 </span></code></pre></pre>
 <p>The <a href="https://docs.rs/kas/latest/kas/prelude/index.html"><code>kas::prelude</code></a> includes a bunch of commonly-used, faily unambiguous stuff.
 Besides that, we only use a couple of widgets.</p>
-<h2><a class="header" href="#defining-counter-with-the-help-of-macros" id="defining-counter-with-the-help-of-macros">Defining Counter with the help of macros</a></h2>
+<h2><a class="header" href="#macros" id="macros">Macros</a></h2>
+<h3><a class="header" href="#impl_scope" id="impl_scope"><code>impl_scope</code></a></h3>
+<p>We define our <code>Counter</code> widget within an <a href="https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html"><code>impl_scope!</code></a>:</p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span><span class="boring">use kas::prelude::*;
-</span><span class="boring">use kas::widgets::{Label, TextButton};
-</span><span class="boring">#[derive(Clone, Debug)] struct Increment(i32);
+</span><span class="boring">use kas::widgets::Label;
 </span>impl_scope! {
-    #[widget{
-        layout = column: [
-            align(center): self.display,
-            row: [
-                TextButton::new_msg(&quot;−&quot;, Increment(-1)),
-                TextButton::new_msg(&quot;+&quot;, Increment(1)),
-            ],
-        ];
-    }]
     #[derive(Debug)]
     struct Counter {
-        core: widget_core!(),
-        #[widget]
-        display: Label&lt;String&gt;,
-        count: i32,
-    }
-}
-<span class="boring">}
-</span></code></pre></pre>
-<h3><a class="header" href="#macros" id="macros">Macros</a></h3>
-<p>The above snippet includes five macro usages:</p>
-<ol>
-<li>
-<p><a href="https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html"><code>impl_scope!</code></a> is a proc-macro which:</p>
-<ul>
-<li>encompasses a type definition (enum/struct/type alias/union) and <code>impl</code> blocks</li>
-<li>provides <code>impl Self</code> syntax (<code>Self</code> expands to the type's name, with correct
-handling of generic parameters and bounds)</li>
-<li>supports some attribute macros with slightly non-standard behaviour</li>
-</ul>
-</li>
-<li>
-<p>The <code>#[widget { layout = ..; }]</code> attribute macro (<a href="https://docs.rs/kas/latest/kas/macros/attr.widget.html"><code>kas::macros::widget</code></a>) is used to
-implement <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a> for <code>struct Counter</code>. Note that this is the only
-supported method of implementing the <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a> trait family (including
-super traits). Further note that this macro may only be used within an <code>impl_scope!</code>.</p>
-</li>
-<li>
-<p><code>#[derive(Debug)]</code> — you already know this.</p>
-</li>
-<li>
-<p><code>widget_core!()</code> is a type generator. This is not a stand-alone macro, but a
-marker substituted by the <code>#[widget]</code> macro (2). Every widget must have one
-field with this type. The substition may be the <a href="https://docs.rs/kas/latest/kas/struct.CoreData.html"><code>CoreData</code></a> type or may be
-a generated type with the same <code>rect: Rect</code> and <code>id: WidgetId</code> fields (which
-may be accessed directly). The type always supports <a href="https://doc.rust-lang.org/stable/std/fmt/trait.Debug.html"><code>Debug</code></a>, <a href="https://doc.rust-lang.org/stable/std/default/trait.Default.html"><code>Default</code></a>
-and <a href="https://doc.rust-lang.org/stable/std/clone/trait.Clone.html"><code>Clone</code></a>.</p>
-</li>
-<li>
-<p><code>#[widget] display: Label&lt;String&gt;</code> is also a marker supported by the outer
-<code>#[widget]</code> attribute macro (2). This attribute may appear on a field to
-mark this field as a child widget (and is thus configured correctly).</p>
-</li>
-</ol>
-<h3><a class="header" href="#constructor-and-layout" id="constructor-and-layout">Constructor and layout</a></h3>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">use kas::prelude::*;
-</span><span class="boring">use kas::widgets::{Label, TextButton};
-</span><span class="boring">#[derive(Clone, Debug)] struct Increment(i32);
-</span>impl_scope! {
-    #[widget{
-        layout = column: [
-            align(center): self.display,
-            row: [
-                TextButton::new_msg(&quot;−&quot;, Increment(-1)),
-                TextButton::new_msg(&quot;+&quot;, Increment(1)),
-            ],
-        ];
-    }]
-    #[derive(Debug)]
-    struct Counter {
-        core: widget_core!(),
-        #[widget]
+        // core: widget_core!(),
+        // #[widget]
         display: Label&lt;String&gt;,
         count: i32,
     }
@@ -382,40 +312,105 @@ mark this field as a child widget (and is thus configured correctly).</p>
     impl Self {
         fn new(count: i32) -&gt; Self {
             Counter {
-                core: Default::default(),
+                // core: Default::default(),
                 display: Label::from(count.to_string()),
                 count,
             }
         }
     }
-};
+}
 <span class="boring">}
 </span></code></pre></pre>
-<p>First note the simple constructor: <code>fn Counter::new</code>. (Reminder: <code>impl Self</code>
-is expanded to <code>impl Counter</code> by the <code>impl_scope!</code> macro.)</p>
-<p>Our widget's layout is here defined by the <code>layout = ..</code> parameter.
-(An alternative is to implement <a href="https://docs.rs/kas/latest/kas/trait.Layout.html"><code>Layout</code></a> directly.)
-The <code>layout</code> syntax is new, but should be easy to understand:</p>
+<p>This is a macro provided by the <a href="https://crates.io/crates/impl-tools">impl-tools</a> library which wraps a type
+definition (struct, enum, type alias or union) along with <code>impl</code> blocks for this
+type. We use <a href="https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html"><code>impl_scope!</code></a> for the following:</p>
 <ul>
-<li>Our top layout is a <code>column</code> containing ...</li>
-<li>... the field <code>self.display</code>, annotated with <code>align(center)</code> ...</li>
-<li>... and a <code>row</code> of two <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> widgets</li>
+<li><code>impl Self</code> syntax (equivalent to <code>impl Counter</code> here)</li>
+<li>to support the <code>#[widget]</code> macro, which is affected by <code>impl</code> blocks within the scope</li>
 </ul>
-<p>In general, layout syntax is one of four things:</p>
+<h3><a class="header" href="#widget" id="widget"><code>#[widget]</code></a></h3>
+<p>The <code>#[widget]</code> attribute macro is used to implement the <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a> trait (this
+is the only supported method of implementing <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a>). This attribute appears
+on a struct (or tuple struct) definition within an <a href="https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html"><code>impl_scope!</code></a>:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{Label, TextButton};
+</span><span class="boring">#[derive(Clone, Debug)] struct Increment(i32);
+</span>impl_scope! {
+    #[widget{
+        layout = column: [
+            align(center): self.display,
+            row: [
+                TextButton::new_msg(&quot;−&quot;, Increment(-1)),
+                TextButton::new_msg(&quot;+&quot;, Increment(1)),
+            ],
+        ];
+    }]
+    #[derive(Debug)]
+    struct Counter {
+        core: widget_core!(),
+        #[widget] display: Label&lt;String&gt;,
+        count: i32,
+    }
+
+    impl Widget for Self {
+        fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
+            if let Some(Increment(incr)) = mgr.try_pop_msg() {
+                self.count += incr;
+                *mgr |= self.display.set_string(self.count.to_string());
+            }
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>First note: using <code>#[widget]</code> on <code>struct Counter</code> implements the <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a>
+trait, yet we <code>impl Widget</code> for <code>Counter</code> anyway. As noted above, the
+<code>#[widget]</code> macro is able to read this <code>impl</code> block (since it is within the same
+<a href="https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html"><code>impl_scope!</code></a>) and can adjust it (injecting extra methods as necessary).</p>
+<h4><a class="header" href="#properties-and-layout" id="properties-and-layout">Properties and layout</a></h4>
+<p>The <code>#[widget]</code> attribute macro supports parameters; here we use the <code>layout</code>
+parameter to define the widget's <strong>layout</strong>. For a reference, see
+<a href="https://docs.rs/kas/latest/kas/macros/attr.widget.html"><code>kas::macros::widget</code></a>.</p>
+<p>In this case, the layout is a column over <code>self.display</code> (centred) and
+a row over two <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> widgets.</p>
+<p>Note that there are three syntaxes for placing child items (widgets) within the layout:</p>
 <ul>
-<li>a keyword such as <code>column</code> or <code>align(..)</code>, followed by a <code>:</code> and some
-sub-layout (or list of sub-layouts)</li>
-<li><code>self.foo</code> where <code>foo</code> is a field implementing <a href="https://docs.rs/kas/latest/kas/trait.Layout.html"><code>Layout</code></a> (possibly but not necessarily a widget)</li>
-<li><code>Foo::new(..)</code> where <code>Foo</code> is a type name (starting upper-case), the type is
-a <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a>, and the whole expression <code>Foo::new(..)</code> constructs an object
-which coerces to <code>dyn Widget</code></li>
-<li><code>&quot;blah blah&quot;</code> — a simple label</li>
+<li><code>&quot;a string&quot;</code> — generates a simple label widget (unlike <a href="https://docs.rs/kas/latest/kas/widgets/struct.Label.html"><code>Label</code></a>, this does
+not enable line wrapping)</li>
+<li><code>self.foo</code> — embeds a field (where <code>foo</code> is either a widget or just a type
+implementing <a href="https://docs.rs/kas/latest/kas/trait.Layout.html"><code>Layout</code></a>)</li>
+<li><code>Foo::bar()</code> where <code>Foo</code> is a widget type (must be in scope and start with
+an upper-case letter) and <code>Foo::bar()</code> constructs an instance of this type</li>
 </ul>
-<p>It's a <em>bit</em> more complex than this, but that should get you started. You can
-read the reference here: <a href="https://docs.rs/kas/latest/kas/macros/attr.widget.html"><code>kas::macros::widget</code></a>.</p>
+<h4><a class="header" href="#core" id="core">Core</a></h4>
+<p>Struct <code>Counter</code> has field <code>core: widget_core!()</code>. This macro is a type
+generator. It is not a stand-alone macro, but a marker substituted by the
+<code>#[widget]</code>. Every widget must have one field with this type.</p>
+<p>The substition may be the <a href="https://docs.rs/kas/latest/kas/struct.CoreData.html"><code>CoreData</code></a> type or may be a generated type with the
+same <code>rect: Rect</code> and <code>id: WidgetId</code> fields (which may be accessed directly).
+The type always supports <a href="https://doc.rust-lang.org/stable/std/fmt/trait.Debug.html"><code>Debug</code></a>, <a href="https://doc.rust-lang.org/stable/std/default/trait.Default.html"><code>Default</code></a> and <a href="https://doc.rust-lang.org/stable/std/clone/trait.Clone.html"><code>Clone</code></a>.</p>
 <p>Aside: since KAS is a <em>stateful</em> UI system, the <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> widgets in our
 row must be stored <em>somewhere</em>, right? Yes: in the <code>widget_core!</code> field
 (a generated type).</p>
+<h4><a class="header" href="#child-widgets" id="child-widgets">Child widgets</a></h4>
+<p>Other than when embedded directly in the layout (as with the <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a>s),
+child widgets are a field marked by <code>#[widget]</code>:</p>
+<pre><code class="language-ignore">struct Counter {
+    #[widget] display: Label&lt;String&gt;,
+    // ...
+}
+</code></pre>
+<p>This usage of <code>#[widget]</code> is another marker supported by the <code>#[widget]</code> macro
+(on the type).</p>
+<p>Note that any object supporting <a href="https://docs.rs/kas/latest/kas/trait.Layout.html"><code>Layout</code></a> may appear in the layout, but that
+fields which are widgets must carry the <code>#[widget]</code> marker. This notifies that
+the field implements <a href="https://docs.rs/kas/latest/kas/trait.Widget.html"><code>Widget</code></a> and must be initialized ([<code>Widget::configure</code>]).
+If <code>#[widget]</code> is missing on a visible widget, you will get a crash when the
+mouse moves over the widget and the event handler resolves an uninitialized
+<a href="https://docs.rs/kas/latest/kas/struct.WidgetId.html"><code>WidgetId</code></a>.</p>
 <h2><a class="header" href="#messages" id="messages">Messages</a></h2>
 <h3><a class="header" href="#the-message-type" id="the-message-type">The message type</a></h3>
 <p>We skipped this type definition above:</p>
@@ -431,57 +426,39 @@ is required to send as a message; <a href="https://doc.rust-lang.org/stable/std/
 <p>Aside: we <em>could</em> simply use <code>i32</code> and forget the <code>Increment</code> type, but using a
 named type provides useful documentation, especially in log messages.</p>
 <h3><a class="header" href="#the-message-stack" id="the-message-stack">The message stack</a></h3>
-<p>Our button widgets are constructed using <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html#method.new_msg"><code>TextButton::new_msg</code></a>.
-Referring to the <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> documentation (or the source) we see that
-this is equivalent to <code>TextButton::new(&quot;+&quot;).on_push(|mgr| mgr.push_msg(Increment(1)))</code>,
-using the method <a href="https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.push_msg"><code>EventMgr::push_msg</code></a>, which pushes to the &quot;message stack&quot;.</p>
+<p>Our button widgets are constructed using <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html#method.new_msg"><code>TextButton::new_msg</code></a>, the first of which is
+equivalent to <code>TextButton::new(&quot;+&quot;).on_push(|mgr| mgr.push_msg(Increment(1)))</code>:
+a button with label &quot;+&quot; and a closure called &quot;on push&quot;.</p>
 <p>KAS's <a href="https://docs.rs/kas/latest/kas/event/index.html#event-handling-model">event-handling model is described here</a>.
-The relevant parts to our example are:</p>
+In our example:</p>
 <ol>
-<li>On activation (via mouse click or keyboard), <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a>'s handler is called.</li>
-<li>This handler calls <a href="https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.push_msg"><code>EventMgr::push_msg</code></a> to push <code>Increment(1)</code> to
+<li>When the button is clicked or otherwise activated an <a href="https://docs.rs/kas/latest/kas/event/enum.Event.html"><code>Event</code></a> is sent
+(via tree traversal: the root widget, our <code>Counter</code> widget, the <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a>)</li>
+<li>If this is an &quot;activation&quot; event (<a href="https://docs.rs/kas/latest/kas/event/enum.Event.html#method.on_activate"><code>Event::on_activate</code></a>), then the <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a>
+calls its &quot;push&quot; closure (note to self: consider renaming to &quot;press&quot;)</li>
+<li>This closure calls <a href="https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.push_msg"><code>EventMgr::push_msg</code></a>, pushing <code>Increment(1)</code> to
 the message stack.</li>
-<li>While the message stack is non-empty, <a href="https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_message"><code>Widget::handle_message</code></a> is called
-on <em>each</em> ancestor of the <code>TextButton</code> widget.</li>
-<li>Our <code>Counter</code> should implement this method, using <a href="https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.try_pop_msg"><code>EventMgr::try_pop_msg</code></a>
-to retrieve the message from the stack.</li>
+<li>The message is sent back via reverse tree traversal. At each step, if the
+message stack is non-empty, <a href="https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_message"><code>Widget::handle_message</code></a> is called (thus
+<code>Counter::handle_message</code> is called).</li>
+<li>Our <code>Counter</code> uses <a href="https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.try_pop_msg"><code>EventMgr::try_pop_msg</code></a> to retrieve a message of type
+<code>Increment</code> from the stack and updates the counter accordingly.</li>
 </ol>
-<h3><a class="header" href="#handling-messages" id="handling-messages">Handling messages</a></h3>
-<p>Lets implement <a href="https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_message"><code>Widget::handle_message</code></a> on <code>Counter</code>:</p>
-<pre><pre class="playground"><code class="language-rust">
-<span class="boring">#![allow(unused)]
-</span><span class="boring">fn main() {
-</span><span class="boring">use kas::prelude::*;
-</span><span class="boring">use kas::widgets::{Label, TextButton};
-</span><span class="boring">#[derive(Clone, Debug)] struct Increment(i32);
-</span>impl_scope! {
-    #[widget{
-        layout = column: [
-            align(center): self.display,
-            row: [TextButton::new_msg(&quot;−&quot;, Increment(-1)), TextButton::new_msg(&quot;+&quot;, Increment(1))],
-        ];
-    }]
-    #[derive(Debug)]
-    struct Counter {
-        core: widget_core!(),
-        #[widget]
-        display: Label&lt;String&gt;,
-        count: i32,
+<p><code>Counter::handle_message</code> is implemented above. Lets see it again:</p>
+<pre><code class="language-rust ignore">fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
+    if let Some(Increment(incr)) = mgr.try_pop_msg() {
+        self.count += incr;
+        *mgr |= self.display.set_string(self.count.to_string());
     }
-    impl Widget for Self {
-        fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
-            if let Some(Increment(incr)) = mgr.try_pop_msg() {
-                self.count += incr;
-                *mgr |= self.display.set_string(self.count.to_string());
-            }
-        }
-    }
-};
-<span class="boring">}
-</span></code></pre></pre>
-<p>The method <a href="https://docs.rs/kas/latest/kas/class/trait.HasString.html#tymethod.set_string"><code>HasString::set_string</code></a> returns a <a href="https://docs.rs/kas/latest/kas/struct.TkAction.html"><code>TkAction</code></a> (to notify that a
-redraw is required). <a href="https://docs.rs/kas/latest/kas/struct.TkAction.html"><code>TkAction</code></a> is a <code>#[must_use</code>] type which should be fed
+}
+</code></pre>
+<p>The method <a href="https://docs.rs/kas/latest/kas/class/trait.HasString.html#tymethod.set_string"><code>HasString::set_string</code></a> called on <code>self.display</code> returns a
+<a href="https://docs.rs/kas/latest/kas/struct.TkAction.html"><code>TkAction</code></a>; this return value notifies that a redraw is required.
+<a href="https://docs.rs/kas/latest/kas/struct.TkAction.html"><code>TkAction</code></a> is a <code>#[must_use</code>] type which should be fed
 to <a href="https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.send_action"><code>EventState::send_action</code></a>, or equivalently: <code>*mgr |= action</code>.</p>
+<p>And, yes, we update the state of <code>self.display</code> by hand here. Is this strategy
+likely to lead to out-of-sync state in complex UIs? Probably. KAS offers a
+solution to this which will be seen in the next example: <code>sync-counter</code>.</p>
 <h4><a class="header" href="#unhandled-messages" id="unhandled-messages">Unhandled messages</a></h4>
 <p>Aside: what if we forgot to write our <code>handle_message</code> implementation and left
 the message on the stack? Assuming you have a logger enabled, you'd see
@@ -493,112 +470,112 @@ something like this:</p>
 <h2><a class="header" href="#window" id="window">Window</a></h2>
 <p>Windows must implement the <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> trait. We could use
 <a href="https://docs.rs/kas/latest/kas/widgets/dialog/struct.Window.html"><code>kas::widgets::dialog::Window</code></a>,
-but implementing <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> on a custom widget is very easy:</p>
-<pre><code class="language-rust ignore">impl Window for Self {
+but implementing <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> on our widget is very easy:</p>
+<pre><code class="language-rust ignore">impl Window for Counter {
     fn title(&amp;self) -&gt; &amp;str { &quot;Counter&quot; }
 }
 </code></pre>
-<h1><a class="header" href="#calculator-make_widget-and-grid-layout" id="calculator-make_widget-and-grid-layout">Calculator: make_widget and grid layout</a></h1>
-<p><em>Topics: grid layout, accelerator bindings</em></p>
-<p><img src="screenshots/calculator.png" alt="Calculator" /></p>
-<p>The full example <a href="https://github.com/kas-gui/tutorials/blob/master/examples/calculator.rs">can be found here</a>.
-Abbreviated code is listed below.</p>
-<pre><pre class="playground"><code class="language-rust">use kas::event::{Command, VirtualKeyCode as VK};
-use kas::prelude::*;
-use kas::widgets::{EditBox, TextButton};
-
-#[derive(Clone, Debug)]
-enum Key {
-    Clear, DelBack, Divide, Multiply, Subtract, Add, Equals, Char(char),
+<h1><a class="header" href="#sync-counter-view-widgets" id="sync-counter-view-widgets">Sync-counter: view widgets</a></h1>
+<p><em>Topics: simple data models and view widgets</em></p>
+<h2><a class="header" href="#data-models" id="data-models">Data models</a></h2>
+<p>In the previous example, <code>Counter</code> has these two fields:</p>
+<pre><code class="language-rust ignore">struct Counter {
+    // ...
+    #[widget] display: Label&lt;String&gt;,
+    count: i32,
 }
+</code></pre>
+<p>But, given that <code>display</code> is always supposed to show the value of <code>count</code>,
+can we combine them? Yes!</p>
+<p>First, we need a data item. This should implement the <a href="https://docs.rs/kas/latest/kas/model/trait.SingleData.html"><code>SingleData</code></a> trait
+(or rather, its base <a href="https://docs.rs/kas/latest/kas/model/trait.SharedData.html"><code>SharedData</code></a>). The latter trait looks a little complex, but for
+a single data item <code>Key = ()</code> and <code>data.contains_key(&amp;())</code> will always return
+true. <code>data.get_cloned(&amp;())</code> simply returns a clone of the data item.
+The only unexpected complexity is the synchronisation mechanism.</p>
+<p>We could implement a suitable type ourselves, but <a href="https://docs.rs/kas/latest/kas/model/struct.SharedRc.html"><code>SharedRc</code></a> does what we
+want. We use <code>SharedRc&lt;i32&gt;</code> as our data type.</p>
+<h3><a class="header" href="#data-views" id="data-views">Data views</a></h3>
+<p>On its own, using a data model isn't useful, but it allows us to use view
+widgets. <a href="https://docs.rs/kas/latest/kas/view/struct.SingleView.html"><code>SingleView</code></a> is a &quot;view controller&quot; which constructs and updates a
+&quot;view widget&quot; over its data model using a <a href="https://docs.rs/kas/latest/kas/view/trait.Driver.html"><code>Driver</code></a>. The default driver,
+<a href="https://docs.rs/kas/latest/kas/view/driver/struct.View.html"><code>driver::View</code></a>, suffices in this case.</p>
+<p>We can adapt the <code>Counter</code> example as follows:</p>
+<pre><code class="language-rust ignore">#[derive(Clone, Debug)]
+struct Counter {
+    core: widget_core!(),
+    #[widget] display: SingleView&lt;SharedRc&lt;i32&gt;&gt;,
+}
+impl Self {
+    fn new(count: i32) -&gt; Self {
+        Counter {
+            core: Default::default(),
+            display: SingleView::new(SharedRc::new(count)),
+        }
+    }
+}
+impl Widget for Self {
+    fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
+        if let Some(Increment(incr)) = mgr.try_pop_msg() {
+            self.display.update_value(mgr, |count| count + incr);
+        }
+    }
+}
+</code></pre>
+<p>Is this change worthwhile on its own? That's debatable: it uses more complex
+types to reduce the risk of de-synchronised data. Its real utility is when that
+data might be accessed from multiple locations.</p>
+<h3><a class="header" href="#multiple-windows" id="multiple-windows">Multiple windows</a></h3>
+<p>We can very easily adapt the above to use multiple instances of the same
+(synchronised) counter:</p>
+<pre><code class="language-rust ignore">    let counter = Counter::new(0);
+    kas::shell::Toolkit::new(theme)?
+        .with(counter.clone())?
+        .with(counter)?
+        .run()
+</code></pre>
+<h2><a class="header" href="#drivers" id="drivers">Drivers</a></h2>
+<p>Why should we implement our own <code>Counter</code> widget when a <a href="https://docs.rs/kas/latest/kas/widgets/struct.Spinner.html"><code>Spinner</code></a> would do the
+same job better?</p>
+<p>Above, we use <a href="https://docs.rs/kas/latest/kas/view/driver/struct.View.html"><code>driver::View</code></a> which constructs a <a href="https://docs.rs/kas/latest/kas/widgets/struct.Label.html"><code>Label</code></a> widget over our
+<code>i32</code> datum. We instead use <a href="https://docs.rs/kas/latest/kas/view/driver/struct.Spinner.html"><code>driver::Spinner</code></a>.</p>
+<p>Unlike our <code>Counter</code> <a href="https://docs.rs/kas/latest/kas/view/struct.SingleView.html"><code>SingleView</code></a> does not support the <a href="https://docs.rs/kas/latest/kas/trait.Window.html"><code>Window</code></a> trait, thus
+we wrap with <a href="https://docs.rs/kas/latest/kas/widgets/dialog/struct.Window.html"><code>dialog::Window</code></a>.</p>
+<p>The complete code for this example is listed below:</p>
+<pre><pre class="playground"><code class="language-rust">use kas::model::SharedRc;
+use kas::view::{driver, SingleView};
+use kas::widgets::dialog::Window;
 
 fn main() -&gt; kas::shell::Result&lt;()&gt; {
     env_logger::init();
 
-    impl_scope! {
-        #[widget{
-            layout = grid: {
-                0, 0: TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete]);
-                1, 0: TextButton::new_msg(&quot;&amp;÷&quot;, Key::Divide).with_keys(&amp;[VK::Slash]);
-                2, 0: TextButton::new_msg(&quot;&amp;×&quot;, Key::Multiply).with_keys(&amp;[VK::Asterisk]);
-                3, 0: TextButton::new_msg(&quot;&amp;−&quot;, Key::Subtract);
-                0, 1: TextButton::new_msg(&quot;&amp;7&quot;, Key::Char('7'));
-                1, 1: TextButton::new_msg(&quot;&amp;8&quot;, Key::Char('8'));
-                2, 1: TextButton::new_msg(&quot;&amp;9&quot;, Key::Char('9'));
-                3, 1..3: TextButton::new_msg(&quot;&amp;+&quot;, Key::Add);
-                0, 2: TextButton::new_msg(&quot;&amp;4&quot;, Key::Char('4'));
-                1, 2: TextButton::new_msg(&quot;&amp;5&quot;, Key::Char('5'));
-                2, 2: TextButton::new_msg(&quot;&amp;6&quot;, Key::Char('6'));
-                0, 3: TextButton::new_msg(&quot;&amp;1&quot;, Key::Char('1'));
-                1, 3: TextButton::new_msg(&quot;&amp;2&quot;, Key::Char('2'));
-                2, 3: TextButton::new_msg(&quot;&amp;3&quot;, Key::Char('3'));
-                3, 3..5:  TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals)
-                    .with_keys(&amp;[VK::Return, VK::NumpadEnter]);
-                0..2, 4: TextButton::new_msg(&quot;&amp;0&quot;, Key::Char('0'));
-                2, 4: TextButton::new_msg(&quot;&amp;.&quot;, Key::Char('.'));
-            };
-        }]
-        #[derive(Debug, Default)]
-        struct Buttons(widget_core!());
-    };
+    let driver = driver::Spinner::new(i32::MIN..=i32::MAX, 1);
+    let c1 = SingleView::new_with_driver(driver, SharedRc::new(0));
+    let c2 = SingleView::new_with_driver(driver, c1.data().clone());
 
-    impl_scope! {
-        #[impl_default]
-        #[widget{
-            layout = column: [
-                self.display,
-                Buttons::default(),
-            ];
-        }]
-        #[derive(Debug)]
-        struct CalcUI {
-            core: widget_core!(),
-            #[widget] display: EditBox = EditBox::new(&quot;0&quot;)
-                .with_editable(false)
-                .with_multi_line(true)
-                .with_lines(3, 3)
-                .with_width_em(5.0, 10.0),
-            calc: Calculator = Calculator::new(),
-        }
-        impl Widget for Self {
-            fn configure(&amp;mut self, mgr: &amp;mut ConfigMgr) {
-                mgr.disable_nav_focus(true);
-
-                // Enable key bindings without Alt held:
-                mgr.enable_alt_bypass(self.id_ref(), true);
-
-                mgr.register_nav_fallback(self.id());
-            }
-
-            fn handle_event(&amp;mut self, mgr: &amp;mut EventMgr, event: Event) -&gt; Response {
-                match event {
-                    Event::Command(Command::DelBack) =&gt; {
-                        if self.calc.handle(Key::DelBack) {
-                            *mgr |= self.display.set_string(self.calc.display());
-                        }
-                        Response::Used
-                    }
-                    _ =&gt; Response::Unused,
-                }
-            }
-
-            fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
-                if let Some(msg) = mgr.try_pop_msg::&lt;Key&gt;() {
-                    if self.calc.handle(msg) {
-                        *mgr |= self.display.set_string(self.calc.display());
-                    }
-                }
-            }
-        }
-        impl Window for Self {
-            fn title(&amp;self) -&gt; &amp;str { &quot;Calculator&quot; }
-        }
-    }
-
-    let theme = kas::theme::ShadedTheme::new().with_font_size(16.0);
+    let theme = kas::theme::ShadedTheme::new().with_font_size(24.0);
     kas::shell::Toolkit::new(theme)?
-        .with(CalcUI::default())?
+        .with(Window::new(&quot;Counter 1&quot;, c1))?
+        .with(Window::new(&quot;Counter 2&quot;, c2))?
         .run()
+}
+</code></pre></pre>
+<h1><a class="header" href="#calculator-make_widget-and-grid-layout" id="calculator-make_widget-and-grid-layout">Calculator: make_widget and grid layout</a></h1>
+<p><em>Topics: grid layout, accelerator bindings</em></p>
+<p><img src="screenshots/calculator.png" alt="Calculator" /></p>
+<p>The full code for this example <a href="https://github.com/kas-gui/tutorials/blob/master/examples/calculator.rs">can be found here</a>.</p>
+<h2><a class="header" href="#back-end-api" id="back-end-api">Back-end API</a></h2>
+<p>First things first, we should design an API for our implementation (back-end).</p>
+<p>Our <code>Calculator</code> is simply a machine with some internal state, a method to
+<code>handle</code> input keys and another method to generate a <code>display</code> string.</p>
+<p>We define an enum, <code>Key</code>, to map each of our buttons to. Since in our example
+numeric input (including the decimal point, <code>.</code>) will simply get pushed to a
+string buffer, we represent these with <code>Key::Char('0')</code> etc.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>#[derive(Clone, Debug)]
+enum Key {
+    Clear, DelBack, Divide, Multiply, Subtract, Add, Equals, Char(char),
 }
 
 #[derive(Clone, Debug)]
@@ -608,7 +585,7 @@ struct Calculator {
 
 impl Calculator {
     fn new() -&gt; Calculator {
-        Calculator {}
+        Calculator { /* .. */ }
     }
 
     fn display(&amp;self) -&gt; String {
@@ -620,30 +597,188 @@ impl Calculator {
         todo!()
     }
 }
+<span class="boring">}
+</span></code></pre></pre>
+<p>Implementing <code>Calculator</code> is left as an exercise to the reader (or use the code
+linked above).</p>
+<h2><a class="header" href="#buttons-and-key-bindings" id="buttons-and-key-bindings">Buttons and key bindings</a></h2>
+<p>The string type used for <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> labels is <a href="https://docs.rs/kas/latest/kas/text/struct.AccelString.html"><code>AccelString</code></a>, which
+supports simple mark-up: <code>&amp;clear</code> adds a binding to key <kbd>c</kbd> and is
+displayed as &quot;<u>c</u>lear&quot; (underline only visible when <kbd>Alt</kbd> is held).
+We may use this to associate physical keys with our buttons. We may associate
+additional keys using <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html#method.with_keys"><code>TextButton::with_keys</code></a>. For example:</p>
+<ul>
+<li><code>TextButton::new_msg(&quot;&amp;1&quot;, Key::Char('1'))</code></li>
+<li><code>TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete])</code></li>
+<li><code>TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals).with_keys(&amp;[VK::Return, VK::NumpadEnter])</code></li>
+</ul>
+<p>Note: <code>VK</code> is an alias to
+<a href="https://docs.rs/kas/latest/kas/event/enum.VirtualKeyCode.html"><code>kas::event::VirtualKeyCode</code></a>,
+which is itself a re-export of
+<a href="https://docs.rs/winit/latest/winit/event/enum.VirtualKeyCode.html"><code>winit::event::VirtualKeyCode</code></a>.
+This type will likely be revised by Winit in the future.</p>
+<h3><a class="header" href="#button-grid" id="button-grid">Button grid</a></h3>
+<p>We use <code>layout = grid: { ... }</code> to define our buttons. We do so within a
+dedicated <code>Buttons</code> widget (this is a matter of style; we could directly embed
+the grid in <code>CalcUI</code>).</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use kas::event::VirtualKeyCode as VK;
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::TextButton;
+</span><span class="boring">#[derive(Clone, Debug)]
+</span><span class="boring">enum Key { Clear, DelBack, Divide, Multiply, Subtract, Add, Equals, Char(char) }
+</span>impl_scope! {
+    #[widget{
+        layout = grid: {
+            0, 0: TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete]);
+            1, 0: TextButton::new_msg(&quot;&amp;÷&quot;, Key::Divide).with_keys(&amp;[VK::Slash]);
+            2, 0: TextButton::new_msg(&quot;&amp;×&quot;, Key::Multiply).with_keys(&amp;[VK::Asterisk]);
+            3, 0: TextButton::new_msg(&quot;&amp;−&quot;, Key::Subtract);
+            0, 1: TextButton::new_msg(&quot;&amp;7&quot;, Key::Char('7'));
+            1, 1: TextButton::new_msg(&quot;&amp;8&quot;, Key::Char('8'));
+            2, 1: TextButton::new_msg(&quot;&amp;9&quot;, Key::Char('9'));
+            3, 1..3: TextButton::new_msg(&quot;&amp;+&quot;, Key::Add);
+            0, 2: TextButton::new_msg(&quot;&amp;4&quot;, Key::Char('4'));
+            1, 2: TextButton::new_msg(&quot;&amp;5&quot;, Key::Char('5'));
+            2, 2: TextButton::new_msg(&quot;&amp;6&quot;, Key::Char('6'));
+            0, 3: TextButton::new_msg(&quot;&amp;1&quot;, Key::Char('1'));
+            1, 3: TextButton::new_msg(&quot;&amp;2&quot;, Key::Char('2'));
+            2, 3: TextButton::new_msg(&quot;&amp;3&quot;, Key::Char('3'));
+            3, 3..5:  TextButton::new_msg(&quot;&amp;=&quot;, Key::Equals)
+                .with_keys(&amp;[VK::Return, VK::NumpadEnter]);
+            0..2, 4: TextButton::new_msg(&quot;&amp;0&quot;, Key::Char('0'));
+            2, 4: TextButton::new_msg(&quot;&amp;.&quot;, Key::Char('.'));
+        };
+    }]
+    #[derive(Debug, Default)]
+    struct Buttons(widget_core!());
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>A grid consists of a series of cells, each with syntax <code>cols, rows: widget;</code>
+where <code>cols</code> and <code>rows</code> are either a zero-based index or a range (<code>n</code> is
+equivalent to <code>n..n+1</code>).</p>
+<p>Above, the &quot;+&quot;, &quot;0&quot; and &quot;=&quot; buttons use spans. Note that size allocation
+algorithms for spans aren't <em>perfect</em>, but much of the time they'll work just
+fine (at least, all cells should at least have their <em>minimum</em> size requirements
+met).</p>
+<h2><a class="header" href="#the-calculator-widget" id="the-calculator-widget">The calculator widget</a></h2>
+<p>We can now define our <code>CalcUI</code> widget:</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::{EditBox, StrLabel};
+</span><span class="boring">#[derive(Clone, Debug)]
+</span><span class="boring">enum Key { Clear, DelBack, Divide, Multiply, Subtract, Add, Equals, Char(char) }
+</span><span class="boring">type Buttons = StrLabel; // hack
+</span><span class="boring">#[derive(Clone, Debug)] struct Calculator;
+</span><span class="boring">impl Calculator {
+</span><span class="boring">    fn display(&amp;self) -&gt; String { todo!() }
+</span><span class="boring">    fn handle(&amp;mut self, key: Key) -&gt; bool { todo!() }
+</span><span class="boring">}
+</span>impl_scope! {
+    #[widget{
+        layout = column: [
+            self.display,
+            Buttons::default(),
+        ];
+    }]
+    #[derive(Debug)]
+    struct CalcUI {
+        core: widget_core!(),
+        #[widget] display: EditBox,
+        calc: Calculator,
+    }
+
+    impl Widget for Self {
+        fn handle_message(&amp;mut self, mgr: &amp;mut EventMgr, _: usize) {
+            if let Some(msg) = mgr.try_pop_msg::&lt;Key&gt;() {
+                if self.calc.handle(msg) {
+                    *mgr |= self.display.set_string(self.calc.display());
+                }
+            }
+        }
+    }
+
+    impl Window for Self {
+        fn title(&amp;self) -&gt; &amp;str { &quot;Calculator&quot; }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h3><a class="header" href="#default-implementation" id="default-implementation">Default implementation</a></h3>
+<p>Let us implement <a href="https://doc.rust-lang.org/stable/std/default/trait.Default.html"><code>Default</code></a> for <code>CalcUI</code> using <a href="https://docs.rs/impl-tools/latest/impl_tools/attr.impl_default.html"><code>impl_default</code></a>:</p>
+<pre><code class="language-rust ignore">    #[impl_default]
+    // ...
+    struct CalcUI {
+        core: widget_core!(),
+        #[widget] display: EditBox = EditBox::new(&quot;0&quot;)
+            .with_editable(false)
+            .with_multi_line(true)
+            .with_lines(3, 3)
+            .with_width_em(5.0, 10.0),
+        calc: Calculator = Calculator::new(),
+    }
+</code></pre>
+<p>The <code>widget_core!()</code> type supports <a href="https://doc.rust-lang.org/stable/std/default/trait.Default.html"><code>Default</code></a>. <code>Calculator</code> does not, but it
+does have a <code>new</code> constructor. <a href="https://docs.rs/kas/latest/kas/widgets/struct.EditBox.html"><code>EditBox</code></a> is a little more interesting: we wish
+to use a 3-line box which is not editable. (We could use <a href="https://docs.rs/kas/latest/kas/widgets/struct.Label.html"><code>Label</code></a> as in the
+Counter example, but <a href="https://docs.rs/kas/latest/kas/widgets/struct.EditBox.html"><code>EditBox</code></a> looks better.)</p>
+<h3><a class="header" href="#main" id="main">Main</a></h3>
+<p>We can now define <code>fn main()</code> and run our example:</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">use kas::prelude::*;
+</span><span class="boring">use kas::widgets::StrLabel;
+</span><span class="boring">impl_scope! {
+</span><span class="boring">    #[widget{
+</span><span class="boring">        layout = column: [];
+</span><span class="boring">    }]
+</span><span class="boring">    #[derive(Debug, Default)]
+</span><span class="boring">    struct CalcUI {
+</span><span class="boring">        core: widget_core!(),
+</span><span class="boring">    }
+</span><span class="boring">    impl Window for Self {
+</span><span class="boring">        fn title(&amp;self) -&gt; &amp;str { &quot;Calculator&quot; }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span>fn main() -&gt; kas::shell::Result&lt;()&gt; {
+    env_logger::init();
+
+    let theme = kas::theme::ShadedTheme::new().with_font_size(16.0);
+    kas::shell::Toolkit::new(theme)?
+        .with(CalcUI::default())?
+        .run()
+}
 </code></pre></pre>
-<h2><a class="header" href="#button-grid" id="button-grid">Button grid</a></h2>
-<p>Q: What does a calculator have that a counter doesn't?<br />
-A: More buttons!</p>
-<p>We define these within <code>layout = grid: { ... }</code>. Each cell has syntax
-<code>cols, rows: widget;</code> where <code>cols</code> and <code>rows</code> are defined by a range or an
-index (where <code>n</code> expands to <code>n..n+1</code>).</p>
-<h2><a class="header" href="#key-bindings" id="key-bindings">Key bindings</a></h2>
-<p>Standard UIs allow navigation via the <kbd>Tab</kbd> key. We disable this
-completely (<a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.disable_nav_focus"><code>ConfigMgr::disable_nav_focus</code></a>).</p>
-<p>Instead, we give each button one or more accelerator keys. These are
-key shortcuts usually used on menus, with the <kbd>Alt</kbd> key held.
-To avoid requiring <kbd>Alt</kbd>, we enable &quot;alt bypass&quot; mode
-(<a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.enable_alt_bypass"><code>ConfigMgr::enable_alt_bypass</code></a>).</p>
-<p>Finally, we assign our widget as the &quot;nav fallback&quot; (<a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.register_nav_fallback"><code>ConfigMgr::register_nav_fallback</code></a>)
-and define a handler for the <kbd>Backspace</kbd> key (in [<code>Widget::handle_event</code>]),
-which does not have a button.</p>
-<pre><code class="language-rust ignore">impl Widget for Self {
+<h2><a class="header" href="#key-bindings-again" id="key-bindings-again">Key bindings, again</a></h2>
+<p>If we run the above example, we should see that it works, but ...</p>
+<ul>
+<li>
+<p>The key bindings only work while the <kbd>Alt</kbd> key is held. To solve
+this we enable &quot;alt bypass&quot; mode (<a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.enable_alt_bypass"><code>ConfigMgr::enable_alt_bypass</code></a>).</p>
+</li>
+<li>
+<p>The <kbd>Tab</kbd> key navigates the UI, and simply pressing a button will
+leave that button focussed. The <kbd>Enter</kbd> key presses the <em>focussed</em>
+button, where as we want it to press the &quot;=&quot; button.</p>
+<p>We solve this by completely disabling navigation with <a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.disable_nav_focus"><code>ConfigMgr::disable_nav_focus</code></a>.</p>
+</li>
+<li>
+<p>The <kbd>Backspace</kbd> key doesn't work. We didn't create a <a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a>
+for this key, but would like the key to map to <code>Key::DelBack</code>.</p>
+<p>Solving this is slightly more complex; firstly we use <a href="https://docs.rs/kas/latest/kas/event/struct.ConfigMgr.html#method.register_nav_fallback"><code>ConfigMgr::register_nav_fallback</code></a>
+to ensure otherwise unhandled key presses are sent to our <code>CalcUI</code> widget,
+then we implement <a href="https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_event"><code>Widget::handle_event</code></a>. Since <a href="https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_message"><code>Widget::handle_message</code></a>
+is not called after <code>handle_event</code> on the same widget, we update the
+<code>Calculator</code> and <code>self.display</code> directly.</p>
+</li>
+</ul>
+<pre><code class="language-rust ignore">impl Widget for CalcUI {
     fn configure(&amp;mut self, mgr: &amp;mut ConfigMgr) {
-        mgr.disable_nav_focus(true);
-
-        // Enable key bindings without Alt held:
         mgr.enable_alt_bypass(self.id_ref(), true);
-
+        mgr.disable_nav_focus(true);
         mgr.register_nav_fallback(self.id());
     }
 
@@ -660,14 +795,22 @@ which does not have a button.</p>
     }
 }
 </code></pre>
-<p><a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html"><code>TextButton</code></a> supports two methods of defining accelerator keys, as exemplified
-by the <code>clear</code> button:</p>
-<pre><code class="language-ignore">0, 0: TextButton::new_msg(&quot;&amp;clear&quot;, Key::Clear).with_keys(&amp;[VK::Delete]);
-</code></pre>
-<p>The label is an <a href="https://docs.rs/kas/latest/kas/text/struct.AccelString.html"><code>AccelString</code></a>, which supports simple mark-up: <code>&amp;c</code> adds a
-binding to <kbd>c</kbd> and is displayed as <code>c</code> (with an underline when
-<kbd>Alt</kbd> is held).</p>
-<p><a href="https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html#method.with_keys"><code>TextButton::with_keys</code></a> explicitly assigns additional key bindings.</p>
+<h2><a class="header" href="#data-models-1" id="data-models-1">Data models</a></h2>
+<p>A final note: we implemented the above without using data models. For the
+example as is, this is fine. If we wished to embed <code>CalcUI</code> in a more complex
+user interface <em>as a stand-alone calculator</em>, this would also be fine. But if
+we wished to use the calculator's result elsewhere in the UI or in the back-end,
+we should probably use a data model.</p>
+<p>The first step to doing so would be to put our <code>Calculator</code> in a data model,
+either by using <code>SharedRc&lt;Calculator&gt;</code> (which, with the current data model
+traits, would require a clone of the entire <code>Calculator</code> each time the display
+is updated), or by implementing <a href="https://docs.rs/kas/latest/kas/model/trait.SharedData.html"><code>SharedData</code></a> directly (probably using
+<code>type Item = f64;</code> or <code>type Item = Result&lt;f64, ParseFloatError&gt;;</code> as used in
+<code>Calculator</code>).</p>
+<p>Depending on the <code>Item</code> type, we may need to implement our own <a href="https://docs.rs/kas/latest/kas/view/trait.Driver.html"><code>Driver</code></a>.
+The code of <code>CalcUI::handle_message</code> would move to the <a href="https://docs.rs/kas/latest/kas/view/trait.Driver.html#method.on_message"><code>Driver::on_message</code></a>
+implementation (note: the data (<code>Calculator</code> instance) is passed by reference;
+this may be updated using <a href="https://docs.rs/kas/latest/kas/model/struct.SharedRc.html#method.update_mut"><code>SharedRc::update_mut</code></a>).</p>
 
                     </main>
 
