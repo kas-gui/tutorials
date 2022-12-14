@@ -1,4 +1,4 @@
-# Sync-counter: view widgets
+# Sync-counter: data models
 
 *Topics: simple data models and view widgets*
 

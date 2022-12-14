@@ -32,7 +32,7 @@ impl_scope! {
     impl Widget for Self {
         fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
             if let Some(Increment(incr)) = mgr.try_pop_msg() {
-                self.display.update_value(mgr, |count| count + incr);
+                self.display.update_value(mgr, |count| *count += incr);
             }
         }
     }
@@ -47,8 +47,5 @@ fn main() -> kas::shell::Result<()> {
     let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
 
     let counter = Counter::new(0);
-    kas::shell::Toolkit::new(theme)?
-        .with(counter.clone())?
-        .with(counter)?
-        .run()
+    kas::shell::Toolkit::new(theme)?.with(counter)?.run()
 }
