@@ -7,4 +7,4 @@ publish = false
 [dependencies]
 doc-comment = "0.3.3"
 env_logger = "0.9"
-kas = "0.11.0"
+kas = "0.12.0"

@@ -1,4 +1,4 @@
-# Sync-counter: view widgets
+# Sync-counter: data models
 
 *Topics: simple data models and view widgets*
 
@@ -71,6 +71,7 @@ We can very easily adapt the above to use multiple instances of the same
         .run()
 ```
 
+[Full code for this example](https://github.com/kas-gui/tutorials/blob/master/examples/sync-counter.rs).
 
 ## Drivers
 
@@ -83,7 +84,7 @@ Above, we use [`driver::View`] which constructs a [`Label`] widget over our
 Unlike our `Counter` [`SingleView`] does not support the [`Window`] trait, thus
 we wrap with [`dialog::Window`].
 
-The complete code for this example is listed below:
+The [complete code for this example](https://github.com/kas-gui/tutorials/blob/master/examples/sync-spinner.rs) is listed below:
 
 ```rust
 use kas::model::SharedRc;
