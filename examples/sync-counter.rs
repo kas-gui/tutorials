@@ -1,17 +1,54 @@
 use kas::model::SharedRc;
-use kas::view::{driver, SingleView};
-use kas::widgets::dialog::Window;
+use kas::prelude::*;
+use kas::view::SingleView;
+use kas::widgets::TextButton;
+
+#[derive(Clone, Debug)]
+struct Increment(i32);
+
+impl_scope! {
+    #[widget{
+        layout = column: [
+            align(center): self.display,
+            row: [
+                TextButton::new_msg("−", Increment(-1)),
+                TextButton::new_msg("+", Increment(1)),
+            ],
+        ];
+    }]
+    #[derive(Clone, Debug)]
+    struct Counter {
+        core: widget_core!(),
+        #[widget] display: SingleView<SharedRc<i32>>,
+    }
+    impl Self {
+        fn new(count: i32) -> Self {
+            Counter {
+                core: Default::default(),
+                display: SingleView::new(SharedRc::new(count)),
+            }
+        }
+    }
+    impl Widget for Self {
+        fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
+            if let Some(Increment(incr)) = mgr.try_pop_msg() {
+                self.display.update_value(mgr, |count| *count += incr);
+            }
+        }
+    }
+    impl Window for Self {
+        fn title(&self) -> &str { "Counter" }
+    }
+}
 
 fn main() -> kas::shell::Result<()> {
     env_logger::init();
 
-    let driver = driver::Spinner::new(i32::MIN..=i32::MAX, 1);
-    let c1 = SingleView::new_with_driver(driver, SharedRc::new(0));
-    let c2 = SingleView::new_with_driver(driver, c1.data().clone());
+    let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
 
-    let theme = kas::theme::ShadedTheme::new().with_font_size(24.0);
+    let counter = Counter::new(0);
     kas::shell::Toolkit::new(theme)?
-        .with(Window::new("Counter 1", c1))?
-        .with(Window::new("Counter 2", c2))?
+        .with(counter.clone())?
+        .with(counter)?
         .run()
 }
