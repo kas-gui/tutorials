@@ -127,7 +127,7 @@ difficulty converting message types and an inability to return multiple messages
 simultaneously (useful e.g. to indicate the index of an item in a list).
 Instead, we use a stack:
 [`Widget::handle_event`] calls [`EventMgr::push_msg`] to push a message
-and [`Widget::handle_message`] uses [`EventMgr::try_pop_msg`] to pop a message.
+and [`Widget::handle_message`] uses [`EventMgr::try_pop`] to pop a message.
 
 But what *is* a message? Nearly anything! It is simply an object of any type
 supporting [`Debug`]. Use of built-in types like `()` or `i32` is possible but
@@ -173,7 +173,7 @@ impl_scope! {
     // We set up a message handler.
     impl Widget for Self {
         fn handle_message(&mut self, mgr: &mut EventMgr) {
-            if let Some(Increment(incr)) = mgr.try_pop_msg() {
+            if let Some(Increment(incr)) = mgr.try_pop() {
                 // Since this handler runs on `Counter`, we can update self.count:
                 self.count += incr;
                 // Unfortunately, we must update self.display manually:
@@ -219,7 +219,7 @@ impl Window for Counter {
 [`TextButton::new_msg`]: https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html#method.new_msg
 [`EventMgr`]: https://docs.rs/kas/latest/kas/event/struct.EventMgr.html
 [`EventMgr::push_msg`]: https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.push_msg
-[`EventMgr::try_pop_msg`]: https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.try_pop_msg
+[`EventMgr::try_pop`]: https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.try_pop
 [`HasString::set_string`]: https://docs.rs/kas/latest/kas/class/trait.HasString.html#tymethod.set_string
 [`TkAction`]: https://docs.rs/kas/latest/kas/struct.TkAction.html
 [`EventState::send_action`]: https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.send_action
