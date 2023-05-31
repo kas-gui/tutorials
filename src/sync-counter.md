@@ -47,7 +47,7 @@ impl Self {
     }
 }
 impl Widget for Self {
-    fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
+    fn handle_message(&mut self, mgr: &mut EventMgr) {
         if let Some(Increment(incr)) = mgr.try_pop_msg() {
             self.display.update_value(mgr, |count| count + incr);
         }

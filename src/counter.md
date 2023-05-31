@@ -172,7 +172,7 @@ impl_scope! {
 
     // We set up a message handler.
     impl Widget for Self {
-        fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
+        fn handle_message(&mut self, mgr: &mut EventMgr) {
             if let Some(Increment(incr)) = mgr.try_pop_msg() {
                 // Since this handler runs on `Counter`, we can update self.count:
                 self.count += incr;
