@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let window = MessageBox::new("Message", "Hello world");
 
     let theme = kas::theme::FlatTheme::new();
-    kas::shell::Toolkit::new(theme)?.with(window)?.run()
+    kas::shell::DefaultShell::new(theme)?.with(window)?.run()
 }
 ```
 
@@ -56,28 +56,28 @@ A window is any type implementing the [`Window`] trait.
 # fn main() -> Result<(), Box<dyn std::error::Error>> {
 # let window = MessageBox::new("Message", "Hello world");
 let theme = kas::theme::FlatTheme::new();
-kas::shell::Toolkit::new(theme)?.with(window)?.run()
+kas::shell::DefaultShell::new(theme)?.with(window)?.run()
 # }
 ```
 
-[`kas::shell::Toolkit`] is the "shell", providing bindings to windowing and
+[`kas::shell::DefaultShell`] is the "shell", providing bindings to windowing and
 graphics functionality (at the time of writing, via Winit and WGPU).
 One *could* write their own shell (e.g. to embed KAS), but that would be an
 advanced topic (and breaking new ground).
 
 High-level drawing and sizing is handled by a "theme", which we provide to the
-toolkit. Writing a custom theme is another advanced (but better tested) topic.
+shell. Writing a custom theme is another advanced (but better tested) topic.
 Here we just use [`FlatTheme`].
 
-Finally, [`Toolkit::run`] starts our UI. This method does not return (see
+Finally, [`Shell::run`] starts our UI. This method does not return (see
 [`winit::event_loop::EventLoop::run`] documentation).
 
-The toolkit (and program) will exit after all windows have closed.
+The shell (and program) will exit after all windows have closed.
 
 [`winit::event_loop::EventLoop::run`]: https://docs.rs/winit/latest/winit/event_loop/struct.EventLoop.html#method.run
 [`kas_theme::FlatTheme`]: https://docs.rs/kas-theme/latest/kas_theme/struct.FlatTheme.html
-[`kas::shell::Toolkit`]: https://docs.rs/kas/latest/kas/shell/struct.Toolkit.html
-[`Toolkit::run`]: https://docs.rs/kas/latest/kas/shell/struct.Toolkit.html#method.run
+[`kas::shell::DefaultShell`]: https://docs.rs/kas/latest/kas/shell/struct.DefaultShell.html
+[`Shell::run`]: https://docs.rs/kas/latest/kas/shell/struct.Shell.html#method.run
 [`kas::widgets::dialog::MessageBox`]: https://docs.rs/kas/latest/kas/widgets/dialog/struct.MessageBox.html
 [`Window`]: https://docs.rs/kas/latest/kas/trait.Window.html
 [`FlatTheme`]: https://docs.rs/kas/latest/kas/theme/struct.FlatTheme.html

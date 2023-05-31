@@ -6,5 +6,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let window = MessageBox::new("Message", "Hello world");
 
     let theme = kas::theme::FlatTheme::new();
-    kas::shell::Toolkit::new(theme)?.with(window)?.run()
+    kas::shell::DefaultShell::new(theme)?.with(window)?.run()
 }

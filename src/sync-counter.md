@@ -47,8 +47,8 @@ impl Self {
     }
 }
 impl Widget for Self {
-    fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
-        if let Some(Increment(incr)) = mgr.try_pop_msg() {
+    fn handle_message(&mut self, mgr: &mut EventMgr) {
+        if let Some(Increment(incr)) = mgr.try_pop() {
             self.display.update_value(mgr, |count| count + incr);
         }
     }
@@ -65,7 +65,7 @@ We can very easily adapt the above to use multiple instances of the same
 (synchronised) counter:
 ```rust,ignore
     let counter = Counter::new(0);
-    kas::shell::Toolkit::new(theme)?
+    kas::shell::DefaultShell::new(theme)?
         .with(counter.clone())?
         .with(counter)?
         .run()
@@ -98,8 +98,8 @@ fn main() -> kas::shell::Result<()> {
     let c1 = SingleView::new_with_driver(driver, SharedRc::new(0));
     let c2 = SingleView::new_with_driver(driver, c1.data().clone());
 
-    let theme = kas::theme::ShadedTheme::new().with_font_size(24.0);
-    kas::shell::Toolkit::new(theme)?
+    let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
+    kas::shell::DefaultShell::new(theme)?
         .with(Window::new("Counter 1", c1))?
         .with(Window::new("Counter 2", c2))?
         .run()

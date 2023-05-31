@@ -86,8 +86,8 @@ impl_scope! {
             }
         }
 
-        fn handle_message(&mut self, mgr: &mut EventMgr, _: usize) {
-            if let Some(msg) = mgr.try_pop_msg::<Key>() {
+        fn handle_message(&mut self, mgr: &mut EventMgr) {
+            if let Some(msg) = mgr.try_pop::<Key>() {
                 if self.calc.handle(msg) {
                     *mgr |= self.display.set_string(self.calc.display());
                 }
@@ -102,8 +102,8 @@ impl_scope! {
 fn main() -> kas::shell::Result<()> {
     env_logger::init();
 
-    let theme = kas::theme::ShadedTheme::new().with_font_size(16.0);
-    kas::shell::Toolkit::new(theme)?
+    let theme = kas::theme::SimpleTheme::new().with_font_size(16.0);
+    kas::shell::DefaultShell::new(theme)?
         .with(CalcUI::default())?
         .run()
 }
