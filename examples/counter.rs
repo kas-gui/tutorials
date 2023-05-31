@@ -51,5 +51,5 @@ fn main() -> kas::shell::Result<()> {
     let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
 
     let counter = Counter::new(0);
-    kas::shell::Toolkit::new(theme)?.with(counter)?.run()
+    kas::shell::DefaultShell::new(theme)?.with(counter)?.run()
 }
