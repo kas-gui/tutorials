@@ -1,4 +1,4 @@
-KAS Tutorials
+Kas Tutorials
 ==========
 
 Read here: <https://kas-gui.github.io/tutorials/>
