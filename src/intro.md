@@ -1,10 +1,10 @@
-# KAS Tutorials
+# Kas Tutorials
 
-These tutorials concern the [KAS GUI system](https://github.com/kas-gui/kas).
-See also the [KAS examples](https://github.com/kas-gui/kas/tree/master/kas-wgpu/examples)
+These tutorials concern the [Kas GUI system](https://github.com/kas-gui/kas).
+See also the [Kas examples](https://github.com/kas-gui/kas/tree/master/kas-wgpu/examples)
 and [7GUIs examples](https://github.com/kas-gui/7guis/).
 
-Further reading can be found on the [KAS blog](https://kas-gui.github.io/blog/).
+Further reading can be found on the [Kas blog](https://kas-gui.github.io/blog/).
 
 Please ask questions on the [discussion boards](https://github.com/kas-gui/tutorials/discussions/)
 or on the [tutorials issue tracker](https://github.com/kas-gui/tutorials/discussions/1).
@@ -13,14 +13,14 @@ or on the [tutorials issue tracker](https://github.com/kas-gui/tutorials/discuss
 
 It is assumed that you are already familiar with [the Rust language](https://www.rust-lang.org/).
 If not, then [Learn Rust](https://www.rust-lang.org/learn)!
-You are not expected to master Rust before learning KAS, but this tutorial
+You are not expected to master Rust before learning Kas, but this tutorial
 series assumes a moderate understanding of the language.
 
-KAS supports both **nightly** and **stable** Rust. Due to the nature of
+Kas supports both **nightly** and **stable** Rust. Due to the nature of
 procedural macros, better diagnostics are available when using **nightly**.
 
-Tutorials use the latest stable release of [KAS](https://github.com/kas-gui/kas),
-currently v0.11.
+Tutorials use the latest stable release of [Kas](https://github.com/kas-gui/kas),
+currently v0.14.
 
 ## Examples
 
@@ -33,12 +33,14 @@ cd tutorials
 cargo run --example counter
 ```
 
-## KAS
+## Kas Dependencies
 
 What is `kas`? Here is a heavily-reduced dependency tree:
 ```plain
 kas — Wrapper crate to expose all components under a single API
 ├── kas-core — Core types, traits and event handling
+│   ├── arboard — Clipboard support (optional)
+│   ├── async-global-executor — Executor supporting EventState::push_spawn (optional)
 │   ├── easy-cast — Numeric type-casting, re-exposed as kas::cast
 │   ├── kas-macros (proc-macro) — Macros
 │   │   └── impl-tools-lib — Backend used to implement macros
@@ -50,18 +52,16 @@ kas — Wrapper crate to expose all components under a single API
 │   ├── log — Logging facade
 │   ├── serde — Serialization support for persistent configuration (optional)
 │   ├── serde_json, serde_yaml, ron — Output formats for configuration (optional)
-│   └── winit — (a dependency here for event-handling code)
+│   ├── smithay-clipboard — Wayland clipboard support (optional)
+│   └── winit — Cross-platform window creation
+│   │   └── raw-window-handle — Interoperability for Rust Windowing applications
 ├── kas-widgets — Standard widget collection
 ├── kas-resvg — Canvas and Svg widgets
 │   ├── resvg — An SVG rendering library
 │   └── tiny-skia — Tiny CPU-only Skia subset
-├── kas-view — "View widgets" over synchronized data models (optional)
-└── kas-wgpu — Shell over Winit and WGPU; draw API implementation
-    ├── kas-theme — Theme API and implementations
-    │   └── dark-light — Dark/light theme detection
-    ├── wgpu — Rusty WebGPU API wrapper
-    ├── window_clipboard — Clipboard integration
-    └── winit — Cross-platform window creation
+├── kas-view — "View widgets" over data models (optional)
+└── kas-wgpu — Kas graphics backend over WGPU
+    └── wgpu — Rusty WebGPU API wrapper
 ```
 
 
