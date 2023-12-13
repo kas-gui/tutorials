@@ -1,119 +1,178 @@
 # Sync-counter: data models
 
-*Topics: simple data models and view widgets*
+*Topics: top-level `AppData`, multiple windows*
 
-## Data models
+![Counter 1](screenshots/sync-counter-1.png)
+![Counter 2](screenshots/sync-counter-2.png)
 
-In the previous example, `Counter` has these two fields:
-```rust,ignore
-struct Counter {
-    // ...
-    #[widget] display: Label<String>,
-    count: i32,
-}
-```
-But, given that `display` is always supposed to show the value of `count`,
-can we combine them? Yes!
-
-First, we need a data item. This should implement the [`SingleData`] trait
-(or rather, its base [`SharedData`]). The latter trait looks a little complex, but for
-a single data item `Key = ()` and `data.contains_key(&())` will always return
-true. `data.get_cloned(&())` simply returns a clone of the data item.
-The only unexpected complexity is the synchronisation mechanism.
-
-We could implement a suitable type ourselves, but [`SharedRc`] does what we
-want. We use `SharedRc<i32>` as our data type.
-
-### Data views
-
-On its own, using a data model isn't useful, but it allows us to use view
-widgets. [`SingleView`] is a "view controller" which constructs and updates a
-"view widget" over its data model using a [`Driver`]. The default driver,
-[`driver::View`], suffices in this case.
-
-We can adapt the `Counter` example as follows:
-```rust,ignore
-#[derive(Clone, Debug)]
-struct Counter {
-    core: widget_core!(),
-    #[widget] display: SingleView<SharedRc<i32>>,
-}
-impl Self {
-    fn new(count: i32) -> Self {
-        Counter {
-            core: Default::default(),
-            display: SingleView::new(SharedRc::new(count)),
-        }
-    }
-}
-impl Widget for Self {
-    fn handle_message(&mut self, mgr: &mut EventMgr) {
-        if let Some(Increment(incr)) = mgr.try_pop() {
-            self.display.update_value(mgr, |count| count + incr);
-        }
-    }
-}
-```
-
-Is this change worthwhile on its own? That's debatable: it uses more complex
-types to reduce the risk of de-synchronised data. Its real utility is when that
-data might be accessed from multiple locations.
-
-### Multiple windows
-
-We can very easily adapt the above to use multiple instances of the same
-(synchronised) counter:
-```rust,ignore
-    let counter = Counter::new(0);
-    kas::shell::DefaultShell::new(theme)?
-        .with(counter.clone())?
-        .with(counter)?
-        .run()
-```
-
-[Full code for this example](https://github.com/kas-gui/tutorials/blob/master/examples/sync-counter.rs).
-
-## Drivers
-
-Why should we implement our own `Counter` widget when a [`Spinner`] would do the
-same job better?
-
-Above, we use [`driver::View`] which constructs a [`Label`] widget over our
-`i32` datum. We instead use [`driver::Spinner`].
-
-Unlike our `Counter` [`SingleView`] does not support the [`Window`] trait, thus
-we wrap with [`dialog::Window`].
-
-The [complete code for this example](https://github.com/kas-gui/tutorials/blob/master/examples/sync-spinner.rs) is listed below:
+We complicate the previous example just a little bit!
 
 ```rust
-use kas::model::SharedRc;
-use kas::view::{driver, SingleView};
-use kas::widgets::dialog::Window;
+# extern crate kas;
+use kas::widgets::{format_data, label_any, Adapt, Button, Slider};
+use kas::{messages::MessageStack, Action, Window};
 
-fn main() -> kas::shell::Result<()> {
+#[derive(Clone, Debug)]
+struct Increment(i32);
+
+#[derive(Clone, Copy, Debug)]
+struct Count(i32);
+
+impl kas::app::AppData for Count {
+    fn handle_messages(&mut self, messages: &mut MessageStack) -> Action {
+        if let Some(Increment(add)) = messages.try_pop() {
+            self.0 += add;
+            Action::UPDATE
+        } else {
+            Action::empty()
+        }
+    }
+}
+
+fn counter() -> impl kas::Widget<Data = Count> {
+    // Per window state: (count, increment).
+    type Data = (Count, i32);
+    let initial: Data = (Count(0), 1);
+
+    #[derive(Clone, Debug)]
+    struct SetValue(i32);
+
+    let slider = Slider::right(1..=10, |_, data: &Data| data.1).with_msg(SetValue);
+    let ui = kas::column![
+        format_data!(data: &Data, "Count: {}", data.0.0),
+        row![slider, format_data!(data: &Data, "{}", data.1)],
+        row![
+            Button::new(label_any("Sub")).with(|cx, data: &Data| cx.push(Increment(-data.1))),
+            Button::new(label_any("Add")).with(|cx, data: &Data| cx.push(Increment(data.1))),
+        ],
+    ];
+
+    Adapt::new(ui, initial)
+        .on_update(|_, state, count| state.0 = *count)
+        .on_message(|_, state, SetValue(v)| state.1 = v)
+}
+
+fn main() -> kas::app::Result<()> {
     env_logger::init();
 
-    let driver = driver::Spinner::new(i32::MIN..=i32::MAX, 1);
-    let c1 = SingleView::new_with_driver(driver, SharedRc::new(0));
-    let c2 = SingleView::new_with_driver(driver, c1.data().clone());
+    let theme = kas_wgpu::ShadedTheme::new().with_font_size(24.0);
 
-    let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
-    kas::shell::DefaultShell::new(theme)?
-        .with(Window::new("Counter 1", c1))?
-        .with(Window::new("Counter 2", c2))?
+    kas::app::Default::with_theme(theme)
+        .build(Count(0))?
+        .with(Window::new(counter(), "Counter 1"))
+        .with(Window::new(counter(), "Counter 2"))
         .run()
 }
 ```
 
-[`Spinner`]: https://docs.rs/kas/latest/kas/widgets/struct.Spinner.html
-[`SingleData`]: https://docs.rs/kas/latest/kas/model/trait.SingleData.html
-[`SharedData`]: https://docs.rs/kas/latest/kas/model/trait.SharedData.html
-[`SharedRc`]: https://docs.rs/kas/latest/kas/model/struct.SharedRc.html
-[`SingleView`]: https://docs.rs/kas/latest/kas/view/struct.SingleView.html
-[`Driver`]: https://docs.rs/kas/latest/kas/view/trait.Driver.html
-[`driver::Spinner`]: https://docs.rs/kas/latest/kas/view/driver/struct.Spinner.html
-[`driver::View`]: https://docs.rs/kas/latest/kas/view/driver/struct.View.html
-[`Label`]: https://docs.rs/kas/latest/kas/widgets/struct.Label.html
-[`Window`]: https://docs.rs/kas/latest/kas/trait.Window.html
-[`dialog::Window`]: https://docs.rs/kas/latest/kas/widgets/dialog/struct.Window.html
+## AppData
+
+In the previous example, our top-level `AppData` was `()`: `.build(())`.
+
+This time, we want to store our counter in top-level `AppData`. But, as we saw with `Adapt`, state which doesn't react to messages is useless; hence we use a custom type and implement a message handler:
+```rust
+# extern crate kas;
+# use kas::{messages::MessageStack, Action};
+# #[derive(Clone, Debug)]
+# struct Increment(i32);
+
+#[derive(Clone, Copy, Debug)]
+struct Count(i32);
+
+impl kas::app::AppData for Count {
+    fn handle_messages(&mut self, messages: &mut MessageStack) -> Action {
+        if let Some(Increment(add)) = messages.try_pop() {
+            self.0 += add;
+            Action::UPDATE
+        } else {
+            Action::empty()
+        }
+    }
+}
+```
+[`AppData::handle_messages`] is less succinct than [`Adapt::on_message`], but dones the same job. The method notifies when widgets must be updated by returning [`Action::UPDATE`].
+
+### As an input
+
+We initialise our app with an instance of `Count`: `.build(Count(0))`.
+
+Note that `Count` is now an input to the widgets we construct:
+```rust
+# extern crate kas;
+# use kas::{messages::MessageStack, Action};
+# #[derive(Clone, Copy, Debug)]
+# struct Count(i32);
+# impl kas::app::AppData for Count {
+#     fn handle_messages(&mut self, messages: &mut MessageStack) -> Action { Action::empty() }
+# }
+fn counter() -> impl kas::Widget<Data = Count> {
+    // ...
+    # kas::widgets::label_any("")
+}
+```
+
+### Adapting app data
+
+We could at this point simply repeat the previous example, skipping the [`Adapt`] node since our [`AppData`] implementation already does the work. But lets make things more interesting by combining top-level state with local state.
+
+We define a new data type for local state and construct an initial instance:
+```rust
+# #[derive(Clone, Copy, Debug)]
+# struct Count(i32);
+// Per window state: (count, increment).
+type Data = (Count, i32);
+let initial: Data = (Count(0), 1);
+```
+Note that our local data includes a *copy* of the top-level data `Count` (along with an initial value, `Count(0)`, which will be replaced before it is ever used).
+
+We'll skip right over the widget declarations to the new `Adapt` node:
+```rust
+# extern crate kas;
+# use kas::widgets::{label_any, Adapt};
+# #[derive(Clone, Copy, Debug)]
+# struct Count(i32);
+# fn counter() -> impl kas::Widget<Data = Count> {
+# #[derive(Clone, Debug)]
+# struct SetValue(i32);
+# let ui = label_any("");
+# let initial = (Count(0), 1);
+Adapt::new(ui, initial)
+    .on_update(|_, state, count| state.0 = *count)
+    .on_message(|_, state, SetValue(v)| state.1 = v)
+# }
+```
+The notable addition here is [`Adapt::on_update`], which takes a closure over the expected mutable reference to local `state` as well as *input* data `count` (i.e. the top-level data), allowing us to update local state with the latest top-level `count`.
+
+Aside: this is really not how *adapting* top-level data with local state is *supposed* to work. Ideally, we'd omit the local copy of `Count` entirely and pass something like `(&Count, i32)` to local widgets. But, as any Rustacean knows, a reference requires a lifetime, and dealing with lifetimes can get complicated. The plan is to update our approach once Rust supports object-safe GATs (also known as Extended Generic Associated Types).
+
+## Multiple windows
+
+It barely seems worth mentioning, but there's nothing stopping us from calling `fn counter` multiple times and constructing a new window around each:
+```rust
+# extern crate kas;
+# use kas::{messages::MessageStack, Action, Window};
+# #[derive(Clone, Copy, Debug)]
+# struct Count(i32);
+# impl kas::app::AppData for Count {
+#     fn handle_messages(&mut self, messages: &mut MessageStack) -> Action { Action::empty() }
+# }
+# fn counter() -> impl kas::Widget<Data = Count> {
+#     kas::widgets::label_any("")
+# }
+# fn main() -> kas::app::Result<()> {
+# let theme = kas_wgpu::ShadedTheme::new().with_font_size(24.0);
+kas::app::Default::with_theme(theme)
+    .build(Count(0))?
+    .with(Window::new(counter(), "Counter 1"))
+    .with(Window::new(counter(), "Counter 2"))
+    .run()
+# }
+```
+Of course, each window has its own local state stored in its [`Adapt`] node (the `increment`) while sharing the top-level `Count`.
+
+[`AppData`]: https://docs.rs/kas/latest/kas/app/trait.AppData.html
+[`AppData::handle_messages`]: https://docs.rs/kas/latest/kas/app/trait.AppData.html#tymethod.handle_messages
+[`Adapt`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html
+[`Adapt::on_message`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html#method.on_message
+[`Action::UPDATE`]: https://docs.rs/kas/latest/kas/struct.Action.html#associatedconstant.UPDATE
+[`Adapt::on_update`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html#method.on_update

@@ -1,11 +1,12 @@
 [package]
-name = "KAS-tutorials"
+name = "kas-tutorials"
 version = "0.1.0"
 authors = ["Diggory Hardy <git@dhardy.name>"]
-edition = "2018"
+edition = "2021"
 resolver = "2"
 publish = false
 
 [dependencies]
 env_logger = "0.10"
-kas = "0.13.0"
+kas = "0.14.2"
+kas-wgpu = "0.14.1"
