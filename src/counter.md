@@ -92,7 +92,7 @@ let tree = kas::column![
 Now, you could, if you prefer, import the layout macros: `use kas::{align, column, row};`. *However,*
 
 -   (`std`) [`column!`](https://doc.rust-lang.org/stable/std/macro.column.html) is a *very* different macro. This can result in surprising error messages if you forget to import `kas::column`.
--   If you replace `kas::row!` with `row!` you will get a compile error: the layout macro parser cannot handle <code>.[map_any](https://docs.rs/kas/latest/kas/widgets/trait.AdaptWidgetAny.html#method.map_any)()</code>. `kas::row![..]` evaluates to a complete widget; `row![..]` as an embedded layout does not.
+-   If you replace `kas::row!` with `row!` you will get a compile error: the layout macro parser cannot handle <code>.[map_any][]()</code>. `kas::row![..]` evaluates to a complete widget; `row![..]` as an embedded layout does not.
 
 
 ## Input data
@@ -131,11 +131,11 @@ But to make this *do something* we need one more concept: *messages*.
 
 ### Mapping data
 
-We should briefly justify `.map_any()` in our example: our [`Text`] widget expects input data (of type `i32`), while `Button::label_msg` constructs a <code>[Button](https://docs.rs/kas/latest/kas/widgets/struct.Button.html)\<[AccessLabel](https://docs.rs/kas/latest/kas/widgets/struct.AccessLabel.html)\></code> expecting data of type `()`.
+We should briefly justify `.map_any()` in our example: our [`Text`] widget expects input data (of type `i32`), while [`Button::label_msg`] constructs a <code>[Button][]\<[AccessLabel][]\></code> expecting data of type `()`.
 
-The method <code>.[map_any](https://docs.rs/kas/latest/kas/widgets/trait.AdaptWidgetAny.html#method.map_any)()</code> maps the row of buttons to a new widget supporting (and ignoring) *any* input data.
+The method <code>.[map_any][]()</code> maps the row of buttons to a new widget supporting (and ignoring) *any* input data.
 
-We could instead use <code>Button::new([label_any](https://docs.rs/kas/latest/kas/widgets/fn.label_any.html)("+"))</code> which serves the same purpose, but ignoring that input data much further down the tree.
+We could instead use <code>[Button][]::new([label_any][]("+"))</code> which serves the same purpose, but ignoring that input data much further down the tree.
 
 
 ## Messages
@@ -165,7 +165,7 @@ Use of built-in types like `()` or `i32` is possible but considered bad practice
 
 ### Buttons
 
-This should be obvious: `Button::label_msg("+", Increment(1))` constructs a [`Button`] which pushes the message `Increment(1)` when pressed.
+This should be obvious: `Button::label_msg("+", Increment(1))` constructs a [`Button`][Button] which pushes the message `Increment(1)` when pressed.
 
 ### Handling messages
 
@@ -184,6 +184,7 @@ Adapt::new(tree, 0)
 ```
 [`Adapt::on_message`] calls our closure whenever an `Increment` message is pushed with a mutable reference to its state, `count`. After handling our message, [`Adapt`] will update its descendants with the new value of `count`, thus refreshing the label: `format_value!("{}"))`.
 
+[map_any]: https://docs.rs/kas/latest/kas/widgets/trait.AdaptWidgetAny.html#method.map_any
 [`kas::prelude`]: https://docs.rs/kas/latest/kas/prelude/index.html
 [`kas::column!`]: https://docs.rs/kas/latest/kas/macro.column.html
 [`kas::row!`]: https://docs.rs/kas/latest/kas/macro.row.html
@@ -196,5 +197,8 @@ Adapt::new(tree, 0)
 [`kas::event`]: https://docs.rs/kas/latest/kas/event/index.html
 [`push`]: https://docs.rs/kas/latest/kas/event/struct.EventCx.html#method.push
 [`try_pop`]: https://docs.rs/kas/latest/kas/event/struct.EventCx.html#method.try_pop
-[`Button`]: https://docs.rs/kas/latest/kas/widgets/struct.Button.html
+[Button]: https://docs.rs/kas/latest/kas/widgets/struct.Button.html
 [`Adapt::on_message`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html#method.on_message
+[AccessLabel]: https://docs.rs/kas/latest/kas/widgets/struct.AccessLabel.html
+[label_any]: https://docs.rs/kas/latest/kas/widgets/fn.label_any.html
+[`Button::label_msg`]: https://docs.rs/kas/latest/kas/widgets/struct.Button.html#method.label_msg
