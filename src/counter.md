@@ -1,231 +1,200 @@
-# Counter: a simple widget
+# Counter: an interactive widget
 
-*Topics: prelude, `impl_scope!` and `#[widget]` macros, messages, [`Window`] trait*
+*Topics: layout, input data, messages*
 
 ![Counter](screenshots/counter.png)
 
-Graphical User Interfaces have two main concerns:
-
-1.  Presenting information visually
-2.  Handling user input
-
-## Prelude
+The last example was a bit boring. Lets get interactive!
 
 ```rust
+# extern crate kas;
 use kas::prelude::*;
-```
-The [`kas::prelude`] includes a bunch of commonly-used, faily unambiguous stuff.
+use kas::widgets::{format_value, Adapt, Button};
 
-## Macros
+#[derive(Clone, Debug)]
+struct Increment(i32);
 
-### `impl_scope`
+fn counter() -> impl Widget<Data = ()> {
+    let tree = kas::column![
+        align!(center, format_value!("{}")),
+        kas::row![
+            Button::label_msg("−", Increment(-1)),
+            Button::label_msg("+", Increment(1)),
+        ]
+        .map_any(),
+    ];
 
-We must define widgets within an [`impl_scope!`] (required to support the
-`#[widget]` macro we'll use later). This scope lets us define a type
-(`struct Counter`) then use `impl Self` syntax:
+    Adapt::new(tree, 0).on_message(|_, count, Increment(add)| *count += add)
+}
 
-```rust
-use kas::prelude::*;
-use kas::widgets::Label;
+fn main() -> kas::app::Result<()> {
+    env_logger::init();
 
-impl_scope! {
-    #[derive(Debug)]
-    struct Counter {
-        display: Label<String>,
-        count: i32,
-    }
-
-    // `impl Self` is equivalent to `impl Counter` here.
-    // It's more useful when the type has generic parameters!
-    impl Self {
-        fn new(count: i32) -> Self {
-            Counter {
-                display: Label::from(count.to_string()),
-                count,
-            }
-        }
-    }
+    let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
+    kas::app::Default::with_theme(theme)
+        .build(())?
+        .with(Window::new(counter(), "Counter"))
+        .run()
 }
 ```
 
-### `#[widget]`
+#### Prelude
 
-To make `Counter` a widget, we need to implement the [`Widget`] trait. But
-before you type `impl Widget for Self`, this trait is special:
-
--   The implementing type *must* use the `#[widget]` attribute macro; the
-    [`impl_scope!`] allows this macro to read and edit all code within its block
--   All widgets need a "core" data field (with type `widget_core!()`)
--   Visual layout needs to be specified somehow
--   Fields which are widgets must use `#[widget]` for correct configuration
-
-You can read the [`Widget`] trait docs for details, but we'll push ahead with
-our example for now:
+The [`kas::prelude`] includes a bunch of commonly-used, faily unambiguous stuff:
 ```rust
+# extern crate kas;
 use kas::prelude::*;
-use kas::widgets::Label;
-
-impl_scope! {
-    // We add the `#[widget]` attribute and use it to specify layout:
-    #[widget{
-        layout = column: [
-            align(center): self.display,
-            row: ["−", "+"],
-        ];
-    }]
-    #[derive(Debug)]
-    struct Counter {
-        // We add field `core` and attribute `#[widget]`:
-        core: widget_core!(),
-        #[widget] display: Label<String>,
-        count: i32,
-    }
-}
 ```
 
-#### Properties and layout
+#### Impl trait
 
-For full documentation of the `#[widget]` attribute macro, see
-[`kas::macros::widget`]. Here we will just summarise: the layout is a `column`
-over the widget field `self.display` (with centre-alignment) and a row
-comprising two [`TextButton`] widgets.
+If you're new to Rust, you might find the following confusing:
+```rust
+# extern crate kas;
+# use kas::prelude::*;
+fn counter() -> impl Widget<Data = ()> {
+    // ...
+    # kas::widgets::Label::new("")
+}
+```
+This is (return position) [impl trait](https://doc.rust-lang.org/stable/rust-by-example/trait/impl_trait.html), specifying that the [`Widget`] trait's associated type `Data` is `()`.
+(We'll get back to this type `Data` in a bit.)
 
-This layout syntax permits four types of item:
 
--   Another layout item, e.g. `align`, `row`, `column`
--   A field, e.g. `self.display`. This field must use `#[widget]`.
--   A string literal, e.g. `"Some label"`.
-    (Unlike [`Label`], string literals do not use line wrapping.)
--   A widget constructing expression, e.g. `Label::new("blah blah blah")`.
-    Syntax restriction: the expression must start with an upper-case latter.
-    The type (i.e. [`Label`]) must be in scope.
+## Layout
 
-#### Core
+Our user interface should be a widget tree: lets use a column layout over the count and \[a row layout over the buttons\].
+```rust
+# extern crate kas;
+# use kas::prelude::*;
+# use kas::widgets::{format_value, Adapt, Button};
+# #[derive(Clone, Debug)]
+# struct Increment(i32);
+# fn counter() -> impl Widget<Data = ()> {
+let tree = kas::column![
+    align!(center, format_value!("{}")),
+    kas::row![
+        Button::label_msg("−", Increment(-1)),
+        Button::label_msg("+", Increment(1)),
+    ]
+    .map_any(),
+];
+# Adapt::new(tree, 0)
+# }
+```
 
-As is required by widgets, `Counter` has field `core: widget_core!()`. This
-macro is just a marker substituted by the `#[widget]` macro. It either has type
-[`CoreData`] or a generated type with the same `rect: Rect` and `id: WidgetId`
-fields (which may be accessed directly).
-The type always supports [`Debug`], [`Default`] and [`Clone`].
+### Layout macros
+
+[`kas::column!`] and [`kas::row!`] are layout macros which, as the name suggests, construct a column/row over other widgets.
+
+[`kas::align!`] is another layout macro. Above, the `kas::` prefix is skipped, *not* because `kas::align` was imported, *but* because layout macros (in this case [`kas::column!`]) have direct support for parsing and evaluating other layout macros. (If you wrote `kas::align!` instead the result would function identically but with slightly different code generation.)
+
+Now, you could, if you prefer, import the layout macros: `use kas::{align, column, row};`. *However,*
+
+-   (`std`) [`column!`](https://doc.rust-lang.org/stable/std/macro.column.html) is a *very* different macro. This can result in surprising error messages if you forget to import `kas::column`.
+-   If you replace `kas::row!` with `row!` you will get a compile error: the layout macro parser cannot handle <code>.[map_any](https://docs.rs/kas/latest/kas/widgets/trait.AdaptWidgetAny.html#method.map_any)()</code>. `kas::row![..]` evaluates to a complete widget; `row![..]` as an embedded layout does not.
+
+
+## Input data
+
+So, you may have wondered what the [`Widget::Data`] type encountered above is about. All widgets in Kas are provided *input data* (via [`Events::update`]) when the UI is initialised and *whenever that data changes* (not strictly true as you'll see when we get to custom widgets).
+
+The point is, a widget like [`Text`] is essentially a function `Fn(&A) -> String` where `&A` is *your input data*. [`format_value!`] is just a convenient macro to construct a [`Text`] widget.
+
+Thus, `format_value!("{}")` is a [`Text`] widget which formats some input data to a `String`. But *what* input data?
+
+### Providing input data: Adapt
+
+There are three methods of providing *input data* to a UI:
+
+-   Custom widgets (advanced topic)
+-   Top-level app data (the `()` of `.build(())`; we'll be using this in the next chapter)
+-   [`Adapt`] nodes
+
+All widgets in Kas may store state (though some are not persistent, namely view widgets (another advanced topic)). [`Adapt`] is a widget which stores user-defined data and message handlers.
+
+Thus,
+```rust
+# extern crate kas;
+# use kas::prelude::*;
+# use kas::widgets::{format_value, Adapt};
+# #[derive(Clone, Debug)]
+# struct Increment(i32);
+# fn counter() -> impl Widget<Data = ()> {
+# let tree = format_value!("{}");
+Adapt::new(tree, 0)
+# }
+```
+is a widget which wraps `tree`, providing it with *input data* of 0.
+
+But to make this *do something* we need one more concept: *messages*.
+
+### Mapping data
+
+We should briefly justify `.map_any()` in our example: our [`Text`] widget expects input data (of type `i32`), while `Button::label_msg` constructs a <code>[Button](https://docs.rs/kas/latest/kas/widgets/struct.Button.html)\<[AccessLabel](https://docs.rs/kas/latest/kas/widgets/struct.AccessLabel.html)\></code> expecting data of type `()`.
+
+The method <code>.[map_any](https://docs.rs/kas/latest/kas/widgets/trait.AdaptWidgetAny.html#method.map_any)()</code> maps the row of buttons to a new widget supporting (and ignoring) *any* input data.
+
+We could instead use <code>Button::new([label_any](https://docs.rs/kas/latest/kas/widgets/fn.label_any.html)("+"))</code> which serves the same purpose, but ignoring that input data much further down the tree.
+
 
 ## Messages
 
-KAS uses a fairly simple event-handling model. You can read [`kas::event`] docs,
-but lets keep it simple:
+Kas has a fairly simple event-handling model: **events** (like mouse clicks) and **input data** go *down* the tree, **messages** come back *up*. You can read more about this in [`kas::event`] docs.
 
--   Input events such as a key press or mouse click yield an [`Event`] which is
-    sent down the widget tree, using a [`WidgetId`] to find the correct target.
--   The target widget either handles or discards the [`Event`]. Since this
-    widget may not directly modify state outside itself, it returns a *message*.
--   The *message* travels back up the tree until some widget handles it via
-    [`Widget::handle_message`]. (If not handled, it is simply discarded while a
-    warning is printed to the log.)
+When widgets receive an event, *often* this must be handled by some widget higher up the tree (an ancestor). For example, our "+" button must cause our [`Adapt`] widget to increment its state. To do that,
 
-In early versions of KAS (up to v0.10), the message was simply the event
-handler's return value. Unfortunately this caused problems, including
-difficulty converting message types and an inability to return multiple messages
-simultaneously (useful e.g. to indicate the index of an item in a list).
-Instead, we use a stack:
-[`Widget::handle_event`] calls [`EventMgr::push_msg`] to push a message
-and [`Widget::handle_message`] uses [`EventMgr::try_pop`] to pop a message.
+1.  We define a message type, `Increment`
+2.  The button [`push`]es a message to the message stack
+3.  Our [`Adapt`] widget uses [`try_pop`] to retrieve that message
 
-But what *is* a message? Nearly anything! It is simply an object of any type
-supporting [`Debug`]. Use of built-in types like `()` or `i32` is possible but
-considered bad practice (mostly due to poor log messages), thus the norm is to
-use custom type definitions like this:
+Aside: widgets have an associated type `Data`. So why don't they also have an associated type `Message` (or `Msg` for short)? Early versions of Kas (up to v0.10) did in fact have an `Msg` type, but this had some issues: translating message types between child and parent widgets was a pain, and supporting multiple message types was even more of a pain (mapping to a custom enum), and the `Msg` type must be specified when using `dyn Widget`. Using a variadic (type-erased) message stack completely avoids these issues, and at worst you'll see an `unhandled` warning in the log. In contrast, compile-time typing of input data is considerably more useful and probably a little easier to deal with (the main nuisance being mapping input data to `()` for widgets like labels which don't use it).
+
+### Message types
+
+What *is* a message? Nearly anything: the type *must* support [`Debug`] and *should* have a unique name. Our example defines:
 ```rust
 #[derive(Clone, Debug)]
 struct Increment(i32);
 ```
+Note that if your UI pushes a message to the stack but fails to handle it, you will get a warning message like this:
+```text
+[WARN  kas_core::erased] unhandled: counter::Increment::Increment(1)
+```
+Use of built-in types like `()` or `i32` is possible but considered bad practice (imagine if the above warning was just `unhandled: 1`).
 
-We can now construct a [`TextButton`] which returns an `Increment` message when
-pressed: `TextButton::new_msg("+", Increment(1))`.
+### Buttons
 
-### Buttons and message handling
+This should be obvious: `Button::label_msg("+", Increment(1))` constructs a [`Button`] which pushes the message `Increment(1)` when pressed.
 
-Our last example didn't use real buttons. Lets add them, along with a message
-handler:
+### Handling messages
+
+Finally, we can handle our button click:
 ```rust
-use kas::prelude::*;
-use kas::widgets::{Label, TextButton};
-
-#[derive(Clone, Debug)]
-struct Increment(i32);
-
-impl_scope! {
-    #[widget{
-        layout = column: [
-            align(center): self.display,
-            // We construct buttons within our layout:
-            row: [
-                TextButton::new_msg("−", Increment(-1)),
-                TextButton::new_msg("+", Increment(1)),
-            ],
-        ];
-    }]
-    #[derive(Debug)]
-    struct Counter {
-        core: widget_core!(),
-        #[widget] display: Label<String>,
-        count: i32,
-    }
-
-    // We set up a message handler.
-    impl Widget for Self {
-        fn handle_message(&mut self, mgr: &mut EventMgr) {
-            if let Some(Increment(incr)) = mgr.try_pop() {
-                // Since this handler runs on `Counter`, we can update self.count:
-                self.count += incr;
-                // Unfortunately, we must update self.display manually:
-                *mgr |= self.display.set_string(self.count.to_string());
-            }
-        }
-    }
-}
+# extern crate kas;
+# use kas::prelude::*;
+# use kas::widgets::{format_value, Adapt};
+# #[derive(Clone, Debug)]
+# struct Increment(i32);
+# fn counter() -> impl Widget<Data = ()> {
+# let tree = format_value!("{}");
+Adapt::new(tree, 0)
+    .on_message(|_, count, Increment(add)| *count += add)
+# }
 ```
-
-Note: the method [`HasString::set_string`] called on `self.display` returns a
-[`TkAction`] to notify when a redraw is required. This is passed to the
-[`EventMgr`] with `*mgr |= action` (or [`EventState::send_action`]).
-
-And, yes, it is not a good thing that we have to update `self.display` by hand
-here. KAS has a *partial* solution to this which we'll see later.
-
-## Window
-
-Finally, since we want to use `Counter` as a window, we need to implement the
-[`Window`] trait:
-```rust,ignore
-impl Window for Counter {
-    fn title(&self) -> &str { "Counter" }
-}
-```
-
-[The full code for this example can be found here](https://github.com/kas-gui/tutorials/blob/master/examples/counter.rs).
+[`Adapt::on_message`] calls our closure whenever an `Increment` message is pushed with a mutable reference to its state, `count`. After handling our message, [`Adapt`] will update its descendants with the new value of `count`, thus refreshing the label: `format_value!("{}"))`.
 
 [`kas::prelude`]: https://docs.rs/kas/latest/kas/prelude/index.html
-[`Clone`]: https://doc.rust-lang.org/stable/std/clone/trait.Clone.html
-[`Debug`]: https://doc.rust-lang.org/stable/std/fmt/trait.Debug.html
-[`Default`]: https://doc.rust-lang.org/stable/std/default/trait.Default.html
-[`Widget`]: https://docs.rs/kas/latest/kas/trait.Widget.html
-[`Widget::handle_event`]: https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_event
-[`Widget::handle_message`]: https://docs.rs/kas/latest/kas/trait.Widget.html#method.handle_message
-[`Layout`]: https://docs.rs/kas/latest/kas/trait.Layout.html
-[`impl_scope!`]: https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html
-[impl-tools]: https://crates.io/crates/impl-tools
-[`kas::macros::widget`]: https://docs.rs/kas/latest/kas/macros/attr.widget.html
-[`CoreData`]: https://docs.rs/kas/latest/kas/struct.CoreData.html
-[`TextButton`]: https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html
-[`TextButton::new_msg`]: https://docs.rs/kas/latest/kas/widgets/struct.TextButton.html#method.new_msg
-[`EventMgr`]: https://docs.rs/kas/latest/kas/event/struct.EventMgr.html
-[`EventMgr::push_msg`]: https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.push_msg
-[`EventMgr::try_pop`]: https://docs.rs/kas/latest/kas/event/struct.EventMgr.html#method.try_pop
-[`HasString::set_string`]: https://docs.rs/kas/latest/kas/class/trait.HasString.html#tymethod.set_string
-[`TkAction`]: https://docs.rs/kas/latest/kas/struct.TkAction.html
-[`EventState::send_action`]: https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.send_action
-[`Window`]: https://docs.rs/kas/latest/kas/trait.Window.html
-[`Label`]: https://docs.rs/kas/latest/kas/widgets/struct.Label.html
-[`WidgetId`]: https://docs.rs/kas/latest/kas/struct.WidgetId.html
-[`Event`]: https://docs.rs/kas/latest/kas/event/enum.Event.html
-[`Event::on_activate`]: https://docs.rs/kas/latest/kas/event/enum.Event.html#method.on_activate
+[`kas::column!`]: https://docs.rs/kas/latest/kas/macro.column.html
+[`kas::row!`]: https://docs.rs/kas/latest/kas/macro.row.html
+[`kas::align!`]: https://docs.rs/kas/latest/kas/macro.align.html
+[`Widget::Data`]: https://docs.rs/kas/latest/kas/trait.Widget.html#associatedtype.Data
+[`Events::update`]: https://docs.rs/kas/latest/kas/trait.Events.html#method.update
+[`Text`]: https://docs.rs/kas/latest/kas/widgets/struct.Text.html
+[`format_value!`]: https://docs.rs/kas/latest/kas/widgets/macro.format_value.html
+[`Adapt`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html
 [`kas::event`]: https://docs.rs/kas/latest/kas/event/index.html
+[`push`]: https://docs.rs/kas/latest/kas/event/struct.EventCx.html#method.push
+[`try_pop`]: https://docs.rs/kas/latest/kas/event/struct.EventCx.html#method.try_pop
+[`Button`]: https://docs.rs/kas/latest/kas/widgets/struct.Button.html
+[`Adapt::on_message`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html#method.on_message
