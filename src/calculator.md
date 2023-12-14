@@ -211,7 +211,7 @@ let buttons = kas::grid! {
 
 Worth noting is our hidden `Backspace` button. This is just another cell, but hidden under the `clear` button. Yes, this is a sub-optimal hack (the widget is still sized and drawn); it works but might see a less hacky solution in the future.
 
-Again, we must use [`map_any`] to make our buttons (input `Data = ()`) compatible with the parent UI element (input `Data = Calculator`).
+Again, we use <code>.[map_any][]()</code> to make our buttons (input `Data = ()`) compatible with the parent UI element (input `Data = Calculator`).
 
 
 [`Key`]: https://docs.rs/kas/latest/kas/event/enum.Key.html
@@ -223,4 +223,4 @@ Again, we must use [`map_any`] to make our buttons (input `Data = ()`) compatibl
 [`disable_nav_focus`]: https://docs.rs/kas/latest/kas/event/struct.ConfigCx.html#method.disable_nav_focus
 [`enable_alt_bypass`]: https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.enable_alt_bypass
 [`kas::grid!`]: https://docs.rs/kas/latest/kas/macro.grid.html
-[`map_any`]: https://docs.rs/kas/latest/kas/widgets/trait.AdaptWidgetAny.html#method.map_any
+[map_any]: https://docs.rs/kas/latest/kas/widgets/trait.AdaptWidgetAny.html#method.map_any
