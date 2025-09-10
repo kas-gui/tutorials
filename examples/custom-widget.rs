@@ -1,5 +1,5 @@
 use kas::prelude::*;
-use kas::widgets::{format_value, AccessLabel, Button, Row, Text};
+use kas::widgets::{AccessLabel, Button, Row, Text, format_value};
 
 #[derive(Clone, Debug)]
 struct Increment(i32);

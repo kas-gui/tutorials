@@ -1,4 +1,4 @@
-use kas::widgets::{column, Button};
+use kas::widgets::{Button, column};
 use kas::window::Window;
 
 fn main() -> kas::runner::Result<()> {

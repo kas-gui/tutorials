@@ -1,4 +1,4 @@
-use kas::widgets::{column, format_data, row, AdaptWidget, Button, Label, Slider};
+use kas::widgets::{AdaptWidget, Button, Label, Slider, column, format_data, row};
 use kas::window::Window;
 
 #[derive(Clone, Debug)]

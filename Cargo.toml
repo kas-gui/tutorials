@@ -2,7 +2,7 @@
 name = "kas-tutorials"
 version = "0.1.0"
 authors = ["Diggory Hardy <git@dhardy.name>"]
-edition = "2021"
+edition = "2024"
 resolver = "2"
 publish = false
 
