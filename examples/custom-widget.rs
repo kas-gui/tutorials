@@ -5,18 +5,17 @@ use kas::widgets::{format_value, AccessLabel, Button, Row, Text};
 struct Increment(i32);
 
 impl_scope! {
-    #[widget{
-        layout = column![
-            align!(center, self.display),
-            self.buttons,
-        ];
-    }]
+    #[widget]
+    #[layout(column![
+        self.display.align(AlignHints::CENTER),
+        self.buttons,
+    ])]
     struct Counter {
         core: widget_core!(),
         #[widget(&self.count)]
         display: Text<i32, String>,
         #[widget]
-        buttons: Row<Button<AccessLabel>>,
+        buttons: Row<[Button<AccessLabel>; 2]>,
         count: i32,
     }
     impl Self {
@@ -44,12 +43,13 @@ impl_scope! {
     }
 }
 
-fn main() -> kas::app::Result<()> {
+fn main() -> kas::runner::Result<()> {
     env_logger::init();
 
-    let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
-    kas::app::Default::with_theme(theme)
-        .build(())?
-        .with(Window::new(Counter::new(0), "Counter"))
-        .run()
+    let window = Window::new(Counter::new(0), "Counter");
+
+    let theme = kas::theme::SimpleTheme::new();
+    let mut app = kas::runner::Runner::with_theme(theme).build(())?;
+    let _ = app.config_mut().font.set_size(24.0);
+    app.with(window).run()
 }
