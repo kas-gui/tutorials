@@ -10,7 +10,7 @@ Example apps can be found in the
 
 Run examples like this:
 ```sh
-cargo run --example simple-window
+cargo run --example hello
 ```
 
 ## Licence
