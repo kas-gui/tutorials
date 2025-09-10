@@ -32,6 +32,20 @@ cd tutorials
 cargo run --example counter
 ```
 
+## Logging
+
+Kas uses the [`log`](https://crates.io/crates/log) facade internally. To enable output, we need an implementation, such as [`env_logger`](https://crates.io/crates/env_logger). Add this to `fn main()`:
+```rust
+env_logger::init();
+```
+
+Trace level can be a bit chatty; to get a *reasonable* level of output you might
+try this:
+```sh
+export RUST_LOG=warn,naga=error,kas=debug
+cargo run --example counter
+```
+
 ## Kas Dependencies
 
 What is `kas`? Here is a heavily-reduced dependency tree:
