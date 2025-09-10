@@ -1,7 +1,7 @@
 # Kas Tutorials
 
 These tutorials concern the [Kas GUI system](https://github.com/kas-gui/kas).
-See also the [Kas examples](https://github.com/kas-gui/kas/tree/master/kas-wgpu/examples)
+See also the [Kas examples](https://github.com/kas-gui/kas/tree/master/examples)
 and [7GUIs examples](https://github.com/kas-gui/7guis/).
 
 Further reading can be found on the [Kas blog](https://kas-gui.github.io/blog/).
@@ -16,11 +16,10 @@ If not, then [Learn Rust](https://www.rust-lang.org/learn)!
 You are not expected to master Rust before learning Kas, but this tutorial
 series assumes a moderate understanding of the language.
 
-Kas supports both **nightly** and **stable** Rust. Due to the nature of
-procedural macros, better diagnostics are available when using **nightly**.
+Kas supports **stable** Rust, however better proc-macro diagnostics (including warnings) are available when using **nightly** Rust with Kas's `nightly-diagnostics` feature.
 
 Tutorials use the latest stable release of [Kas](https://github.com/kas-gui/kas),
-currently v0.14.
+currently v0.16.
 
 ## Examples
 
@@ -39,16 +38,20 @@ What is `kas`? Here is a heavily-reduced dependency tree:
 ```plain
 kas — Wrapper crate to expose all components under a single API
 ├── kas-core — Core types, traits and event handling
+│   ├── accesskit — UI accessibility infrastructure
 │   ├── arboard — Clipboard support (optional)
 │   ├── async-global-executor — Executor supporting EventState::push_spawn (optional)
 │   ├── easy-cast — Numeric type-casting, re-exposed as kas::cast
+│   ├── image — Imaging library for common image formats
 │   ├── kas-macros (proc-macro) — Macros
 │   │   └── impl-tools-lib — Backend used to implement macros
 │   ├── kas-text — Font handling, type setting
-│   │   ├── ab_glyph — Glyph rastering
-│   │   ├── harfbuzz_rs — Shaping (optional)
+│   │   ├── fontique — Font enumeration and fallback
+│   │   ├── swash — Font introspection and glyph rendering
 │   │   ├── pulldown-cmark — Markdown parsing (optional)
-│   │   └── rustybuzz — Shaping (optional, default)
+│   │   ├── rustybuzz — Shaping (optional, default)
+│   │   ├── ttf-parser — Font parser for TrueType, OpenType and AAT
+│   │   └── unicode-bidi — Unicode Bidirectional Algorithm
 │   ├── log — Logging facade
 │   ├── serde — Serialization support for persistent configuration (optional)
 │   ├── serde_json, serde_yaml, ron — Output formats for configuration (optional)

@@ -24,23 +24,6 @@ fn main() -> kas::app::Result<()> {
 cargo run --example hello
 ```
 
-## Logging
-
-Enabling a logger is optional, but can be very useful for debugging:
-```rust
-env_logger::init();
-```
-Kas uses the [`log`](https://crates.io/crates/log) facade internally. To see the
-output, we need an implementation, such as
-[`env_logger`](https://crates.io/crates/env_logger).
-
-Trace level can be a bit chatty; to get a *reasonable* level of output you might
-try this:
-```sh
-export RUST_LOG=warn,naga=error,kas=debug
-cargo run --example hello
-```
-
 ## A window, a shell
 
 Next, we construct a [`MessageBox`] widget, then wrap with a [`Window`]:
