@@ -9,14 +9,17 @@ Lets get started with a simple message box.
 
 ```rust
 # extern crate kas;
-use kas::widgets::dialog::MessageBox;
+use kas::widgets::{Button, column};
+use kas::window::Window;
 
-fn main() -> kas::app::Result<()> {
-    env_logger::init();
+fn main() -> kas::runner::Result<()> {
+    let ui = column![
+        "Hello, world!",
+        Button::label("&Close").with(|cx, _| cx.exit())
+    ];
+    let window = Window::new(ui, "Hello").escapable();
 
-    let window = MessageBox::new("Message").into_window("Hello world");
-
-    kas::app::Default::new(())?.with(window).run()
+    kas::runner::Runner::new(())?.with(window).run()
 }
 ```
 
@@ -24,64 +27,26 @@ fn main() -> kas::app::Result<()> {
 cargo run --example hello
 ```
 
-## A window, a shell
+## The UI
 
-Next, we construct a [`MessageBox`] widget, then wrap with a [`Window`]:
-```rust
-# extern crate kas;
-# use kas::widgets::dialog::MessageBox;
-let window = MessageBox::new("Message")
-    .into_window("Hello world");
-# let _: kas::Window<()> = window;
-```
+We use the [`column!`] macro to construct our layout. This macro turns string literals into label widgets for us, ensuring that "Hello, world!" will appear on the screen.
 
-Finally, we construct a default app, add this window, and run:
-```rust
-# extern crate kas;
-# use kas::widgets::dialog::MessageBox;
-# fn main() -> kas::app::Result<()> {
-# let window = MessageBox::new("Message").into_window("Hello world");
-kas::app::Default::new(())?
-    .with(window)
-    .run()
-# }
-```
+For the button, we use a [`Button`] widget. The button's action handler calls [`EventState::exit`] to terminate the UI. (To close the window without terminating the UI, we would instead call `cx.window_action(Action::CLOSE);`.)
 
-[`kas::app::Default`] is just a parameterisation of [`kas::app::Application`] which selects a sensible graphics backend and theme.
+## The Window
 
-If you wanted to select your own theme instead, you could do so as follows:
-```rust
-# extern crate kas;
-# use kas::widgets::dialog::MessageBox;
-# fn main() -> kas::app::Result<()> {
-# let window = MessageBox::new("Message").into_window("Hello world");
-let theme = kas::theme::SimpleTheme::new();
-kas::app::Default::with_theme(theme)
-    .build(())?
-    .with(window)
-    .run()
-# }
-```
+We construct a [`Window`] over the `ui` and a title. We also call [`Window::escapable`] to allow our window to be closed using the <kbd>Escape</kbd> key.
 
-Or, if you wanted to specify the graphics backend and theme:
-```rust
-# extern crate kas;
-# use kas::widgets::dialog::MessageBox;
-# fn main() -> kas::app::Result<()> {
-# let window = MessageBox::new("Message").into_window("Hello world");
-kas_wgpu::WgpuBuilder::new(())
-    .with_theme(kas_wgpu::ShadedTheme::new())
-    .build(())?
-    .with(window)
-    .run()
-# }
-```
+## The Runner
 
-Finally, [`Application::run`] starts our UI. This method runs the event-loop internally, returning `Ok(())` once all windows have closed successfully.
+Every UI needs a [`Runner`]. In this example we simply construct a runner over data `()`, add a single window, and run. In later examples you will see how we can select a theme, use input data, multiple windows and tweak the configuration.
 
-[`MessageBox`]: https://docs.rs/kas/latest/kas/widgets/dialog/struct.MessageBox.html
+Finally, [`Runner::run`] starts our UI. This method runs the event-loop internally, returning `Ok(())` once all windows have closed successfully.
+
+[`column!`]: https://docs.rs/kas/latest/kas/widgets/macro.column.html
+[`Button`]: https://docs.rs/kas/latest/kas/widgets/struct.Button.html
 [`Window`]: https://docs.rs/kas/latest/kas/struct.Window.html
-[`kas::app::Default`]: https://docs.rs/kas/latest/kas/app/type.Default.html
-[`kas::app::Application`]: https://docs.rs/kas/latest/kas/app/struct.Application.html
-[`Application::run`]: https://docs.rs/kas/latest/kas/app/struct.Application.html#method.run
-[`winit::event_loop::EventLoop::run`]: https://docs.rs/winit/latest/winit/event_loop/struct.EventLoop.html#method.run
+[`Window::escapable`]: https://docs.rs/kas/latest/kas/struct.Window.html#method.escapable
+[`EventState::exit`]: https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.exit
+[`Runner`]: https://docs.rs/kas/latest/kas/runner/struct.Runner.html
+[`Runner::run`]: https://docs.rs/kas/latest/kas/runner/struct.Runner.html#method.run
