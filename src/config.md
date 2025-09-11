@@ -32,6 +32,7 @@ Previously we adjusted the font size before the UI was started:
     let theme = kas::theme::SimpleTheme::new();
     let mut app = kas::runner::Runner::with_theme(theme).build(())?;
     let _ = app.config_mut().font.set_size(24.0);
+    # Ok(())
 # }
 ```
 

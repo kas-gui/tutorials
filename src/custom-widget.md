@@ -113,7 +113,7 @@ There are two types of child widgets: hidden layout-generated children and expli
 The first of these is a [`Text`] widget, passed `&self.count` as input data. The second is a [`Row`] widget over [`Button`]s over [`AccessLabel`]s. Since we didn't specify a data mapping for this second widget, it is is passed the `Count` widget's input data (`()`).
 
 Omitting `#[widget]` on a field which is a child widget is an error; sometimes the outer `#[widget]` attribute-macro will report the issue but not always. For example, if we omit the attribute on `buttons` and run, we get a backtrace like the following:
-```
+```ignore
 thread 'main' (413532) panicked at /path/to/kas/crates/kas-core/src/core/data.rs:123:13:
 WidgetStatus of #INVALID: require Configured, found New
 stack backtrace:
@@ -160,9 +160,8 @@ It is however required to define the associated type [`Widget::Data`]. Since it 
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
 # impl_scope! {
-#     #[widget{
-#         layout = "";
-#     }]
+#     #[widget]
+#     #[layout("")]
 #     struct Counter {
 #         core: widget_core!(),
 #         count: i32,
@@ -202,24 +201,11 @@ Don't worry about remembering each step; macro diagnostics should point you in t
 ### Aside: the type of child widgets
 
 Our `Counter` has two (explicit) child widgets, and we must specify the type of each:
-```rust
-# extern crate kas;
-# use kas::impl_scope;
-# use kas::widgets::{AccessLabel, Button, Row, Text};
-# impl_scope! {
-#     #[widget{
-#         Data = ();
-#         layout = "";
-#     }]
-#     struct Counter {
-#         core: widget_core!(),
+```rust,ignore
         #[widget(&self.count)]
         display: Text<i32, String>,
         #[widget]
         buttons: Row<[Button<AccessLabel>; 2]>,
-#         count: i32,
-#     }
-# }
 ```
 There is no real issue in this case, but widget types can get significantly harder to write than `Row<[Button<AccessLabel>; 2]>`. Worse, some widget types are impossible to write (e.g. the result of [`row!`] or widget generics instantiated with a closure). So what can we do instead?
 

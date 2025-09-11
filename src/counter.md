@@ -78,7 +78,7 @@ Our user interface should be a widget tree: lets use a [`row!`] of buttons and a
 ```rust
 # extern crate kas;
 # use kas::prelude::*;
-# use kas::widgets::{format_value, Adapt, Button};
+# use kas::widgets::{Adapt, AdaptWidget, Button, column, format_value, row};
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
 # fn counter() -> impl Widget<Data = ()> {
@@ -90,7 +90,7 @@ Our user interface should be a widget tree: lets use a [`row!`] of buttons and a
         format_value!("{}").align(AlignHints::CENTER),
         buttons.map_any(),
     ];
-    # let _ = tree;
+    # tree.with_state(0)
 # }
 ```
 

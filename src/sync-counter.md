@@ -70,38 +70,35 @@ fn main() -> kas::runner::Result<()> {
 In the previous example, our top-level `AppData` was `()` and our mutable state was stored in an [`Adapt`] widget. This time, we will store our counter in top-level `AppData`, in a custom type which includes a message handler:
 ```rust
 # extern crate kas;
-# use kas::{messages::MessageStack, Action};
+# use kas::{runner::MessageStack, Action};
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
 
 #[derive(Clone, Copy, Debug)]
 struct Count(i32);
 
-impl kas::app::AppData for Count {
-    fn handle_messages(&mut self, messages: &mut MessageStack) -> Action {
+impl kas::runner::AppData for Count {
+    fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {
         if let Some(Increment(add)) = messages.try_pop() {
             self.0 += add;
-            Action::UPDATE
-        } else {
-            Action::empty()
         }
     }
 }
 ```
-[`AppData::handle_messages`] is more verbose than [`Adapt::on_message`], but does the same job. The method notifies when widgets must be updated by returning [`Action::UPDATE`].
+[`AppData::handle_messages`] is more verbose than [`Adapt::on_message`], but does the same job.
 
 To integrate this into our example, we pass a `Count` object into [`kas::runner::Builder::build`] and adjust the prototype of `counter` to:
 ```rust
 # extern crate kas;
-# use kas::{messages::MessageStack, Action};
+# use kas::{runner::MessageStack, Action};
 # #[derive(Clone, Copy, Debug)]
 # struct Count(i32);
-# impl kas::app::AppData for Count {
-#     fn handle_messages(&mut self, messages: &mut MessageStack) -> Action { Action::empty() }
+# impl kas::runner::AppData for Count {
+#     fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {}
 # }
 fn counter() -> impl kas::Widget<Data = Count> {
     // ...
-    # kas::widgets::label_any("")
+    # kas::widgets::Label::new_any("")
 }
 ```
 
@@ -122,18 +119,19 @@ Note that our local data includes a *copy* of the top-level data `Count` (along 
 We'll skip right over the widget declarations to the new [`Adapt`] node:
 ```rust
 # extern crate kas;
-# use kas::widgets::{label_any, Adapt};
+# use kas::widgets::{Adapt, AdaptWidget, Label};
 # #[derive(Clone, Copy, Debug)]
 # struct Count(i32);
 # fn counter() -> impl kas::Widget<Data = Count> {
 # #[derive(Clone, Debug)]
 # struct SetValue(i32);
-# let ui = label_any("");
+# let ui = Label::new_any("");
 # let initial = (Count(0), 1);
     let ui = ui
         .with_state(initial)
         .on_update(|_, state, count| state.0 = *count)
         .on_message(|_, state, SetValue(v)| state.1 = v);
+    # ui
 # }
 ```
 The notable addition here is [`Adapt::on_update`], which takes a closure over the expected mutable reference to local `state` as well as *input* data `count` (i.e. the top-level data), allowing us to update local state with the latest top-level `count`.
@@ -147,16 +145,18 @@ Aside aside: could we not make [`Widget::Data`] into a Generic Associated Type (
 Constructing multiple windows under a UI runner is simple:
 ```rust
 # extern crate kas;
-# use kas::{messages::MessageStack, Action, Window};
+# use kas::{runner::MessageStack, Action, window::Window};
 # #[derive(Clone, Copy, Debug)]
 # struct Count(i32);
-# impl kas::app::AppData for Count {
-#     fn handle_messages(&mut self, messages: &mut MessageStack) -> Action { Action::empty() }
+# impl kas::runner::AppData for Count {
+#     fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {}
 # }
-# fn counter() -> impl kas::Widget<Data = Count> {
-#     kas::widgets::label_any("")
+# fn counter(title: &str) -> Window<Count> {
+#     Window::new(kas::widgets::Label::new_any(""), title)
 # }
-# fn main() -> kas::app::Result<()> {
+# fn main() -> kas::runner::Result<()> {
+    # let count = Count(0);
+    # let theme = kas_wgpu::ShadedTheme::new();
     let mut runner = kas::runner::Runner::with_theme(theme).build(count)?;
     let _ = runner.config_mut().font.set_size(24.0);
     runner

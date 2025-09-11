@@ -142,7 +142,7 @@ fn key_button_with(label: &str, key: Key) -> Button<AccessLabel> {
 Normally, access keys are only active while holding <kbd>Alt</kbd>. To avoid this requirement we call [`with_alt_bypass`]. Further, we disable <kbd>Tab</kbd> key navigation with [`without_nav_focus`] and ensure that the window can be closed with the <kbd>Esc</kbd> key.
 ```rust
 # extern crate kas;
-# use kas::{Widget, widgets::{label_any, Adapt}};
+# use kas::{Widget, widgets::{Label, Adapt}, window::Window};
 # #[derive(Debug)]
 # struct Calculator;
 # impl Calculator {
@@ -150,7 +150,7 @@ Normally, access keys are only active while holding <kbd>Alt</kbd>. To avoid thi
 #   fn handle(&mut self, _key: ()) {}
 # }
 # fn ui() -> impl Widget<Data = ()> {
-# let ui = label_any("");
+# let ui = Label::new_any("");
     Window::new(ui, "Calculator")
         .escapable()
         .with_alt_bypass()
@@ -166,7 +166,7 @@ We already saw column and row layouts. This time, we'll use [`grid!`] for layout
 # extern crate kas;
 # use kas::event::NamedKey;
 # use kas::prelude::*;
-# use kas::widgets::{AccessLabel, Button};
+# use kas::widgets::{AccessLabel, Button, grid};
 # type Key = kas::event::Key<kas::event::SmolStr>;
 # fn key_button(label: &str) -> Button<AccessLabel> {
 #     let string = AccessString::from(label);
