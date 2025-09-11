@@ -4,7 +4,8 @@ use kas::widgets::{AccessLabel, Button, Row, Text, format_value};
 #[derive(Clone, Debug)]
 struct Increment(i32);
 
-impl_scope! {
+#[impl_self]
+mod Counter {
     #[widget]
     #[layout(column![
         self.display.align(AlignHints::CENTER),

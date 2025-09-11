@@ -2,6 +2,11 @@
 
 *Topics: custom widgets*
 
+Custom widgets are essentially the hard way to do things, but they do have their uses:
+
+-   Custom local state and event handlers are significantly more flexible than [`Adapt`]
+-   Custom [`Layout`] implementations and custom mid-level graphics operations (e.g. the [Clock example](https://github.com/kas-gui/kas/tree/master/examples#clock))
+
 ![Counter](screenshots/counter.png)
 
 Here we rewrite the counter as a custom widget. There's no reason to do so for this particular case, but it serves as a simple example to the topic.
@@ -9,24 +14,24 @@ Here we rewrite the counter as a custom widget. There's no reason to do so for t
 ```rust
 # extern crate kas;
 use kas::prelude::*;
-use kas::widgets::{format_value, AccessLabel, Button, Row, Text};
+use kas::widgets::{AccessLabel, Button, Row, Text, format_value};
 
 #[derive(Clone, Debug)]
 struct Increment(i32);
 
-impl_scope! {
-    #[widget{
-        layout = column![
-            align!(center, self.display),
-            self.buttons,
-        ];
-    }]
+#[impl_self]
+mod Counter {
+    #[widget]
+    #[layout(column![
+        self.display.align(AlignHints::CENTER),
+        self.buttons,
+    ])]
     struct Counter {
         core: widget_core!(),
         #[widget(&self.count)]
         display: Text<i32, String>,
         #[widget]
-        buttons: Row<Button<AccessLabel>>,
+        buttons: Row<[Button<AccessLabel>; 2]>,
         count: i32,
     }
     impl Self {
@@ -54,69 +59,101 @@ impl_scope! {
     }
 }
 
-fn main() -> kas::app::Result<()> {
+fn main() -> kas::runner::Result<()> {
     env_logger::init();
 
-    let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
-    kas::app::Default::with_theme(theme)
-        .build(())?
-        .with(Window::new(Counter::new(0), "Counter"))
-        .run()
+    let window = Window::new(Counter::new(0), "Counter");
+
+    let theme = kas::theme::SimpleTheme::new();
+    let mut app = kas::runner::Runner::with_theme(theme).build(())?;
+    let _ = app.config_mut().font.set_size(24.0);
+    app.with(window).run()
 }
 ```
 
 ## Macros
 
-### `impl_scope`
+### `impl_self`
 
-[`impl_scope!`] is a macro from [impl-tools]. This macro wraps a type definition and `impl`s on that type. (Unfortunately it also inhibits `rustfmt` from working, [for now](https://github.com/rust-lang/rustfmt/pull/5538).)  Here, it serves two purposes:
+[`impl_self`] is an attribute macro from [impl-tools]. This macro wraps a type definition and `impl`s on that type with a fake module of the same name. This fake module (here `mod Counter`) does not need to import (`use`) symbols from the parent module; in fact it may only contain one type definition with the same name as the fake module and `impl` items on this type.
 
-1.  `impl Self` syntax (not important here, but much more useful on structs with generics)
-2.  To support the [`#[widget]`][attr-widget] attribute-macro. This attribute-macro is a Kas extension to [`impl_scope!`], and can act on anything within that scope (namely, it will check existing impls of [`Layout`], [`Events`] and [`Widget`], reading definitions of associated `type Data`, injecting certain missing methods into these impls, and write new impls).
+Unfortunately, rust-analyzer does not fully support this: it may insert `use` statements inside the fake module. It may also mis-report errors against the entire fake module. One may instead use the [`impl_scope!`] macro, however since [`rustfmt` refuses to format its contents](https://github.com/rust-lang/rustfmt/pull/5538) this is the worse option. Perhaps some day this stuff will get fixed?
+
+So, *why* do we have to wrap our widget implementations with a macro? Firstly, it supports `impl Self` syntax. Secondly (and much more importantly), it allows the `#[widget]` macro to operate on the type definition and various widget trait implementations simultaneously. This allows the macro to do useful things, like provide contextual default method implementations, inject debugging checks into provided method implementations, provide contextual warnings, and use a synthesized type to store extra state required by macro-generated layout code.
 
 ### `#[widget]`
 
-The [`#[widget]`][attr-widget] attribute-macro is used to implement the [`Widget`] trait. *This is the only supported way to implement [`Widget`].* There are a few parts to this.
-
-**First**, we must apply [`#[widget]`][attr-widget] to the struct. (The `layout = ...;` argument (and `{ ... }` braces) are optional; some other arguments might also occur here.)
-```ignore
-    #[widget{
-        layout = column![
-            align!(center, self.display),
-            self.buttons,
-        ];
-    }]
+The [`#[widget]`][attr-widget] attribute-macro is used to implement the [`Widget`] trait. *This is the only supported way to implement [`Widget`].*
+```rust,ignore
+    #[widget]
+    struct Counter { /* .. */ }
 ```
 
-**Second**, all widgets must have "core data". This *might* be an instance of [`CoreData`] or *might* be some custom generated struct (but with the same public `rect` and `id` fields and constructible via [`Default`]). We *must* provide a field of type `widget_core!()`.
-```ignore
+Like it or not, the `#[widget]` macro is a fairly significant piece of what makes Kas work. Fortunately, most of the complexity is hidden such that you don't need to know about it and can refer to documentation on standard Rust traits.
+
+To get the best diagnostics, be sure to use the `nightly-diagnostics` feature. (Hopefully Rust will stabilize custom proc-macro lints in the next year or so!)
+
+#### Core data
+
+All widgets must have a "core data" field. Typically this is named `core`; it must have type `widget_core!()` and can be initialized using `Default`.
+```rust,ignore
         core: widget_core!(),
 ```
 
-**Third**, any fields which are child widgets must be annotated with `#[widget]`. (This enables them to be configured and updated.)
+#### Child widgets
 
-We can use this attribute to configure the child widget's input data too: in this case, `display` is passed `&self.count`. Beware only that there is no automatic update mechanism: when mutating a field used as input data it may be necessary to explicitly update the affected widget(s) (see the note after the fourth step below).
-```rust
-# extern crate kas;
-# use kas::impl_scope;
-# use kas::widgets::{AccessLabel, Button, Row, Text};
-# impl_scope! {
-#     #[widget{
-#         Data = ();
-#         layout = "";
-#     }]
-    struct Counter {
-        core: widget_core!(),
+There are two types of child widgets: hidden layout-generated children and explicit children. The latter are fields with a `#[widget]` attribute:
+```rust,ignore
         #[widget(&self.count)]
         display: Text<i32, String>,
         #[widget]
-        buttons: Row<Button<AccessLabel>>,
-        count: i32,
-    }
-# }
+        buttons: Row<[Button<AccessLabel>; 2]>,
 ```
 
-**Fourth**, the input `Data` type to our `Counter` widget must be specified somewhere. In our case, we specify this by implementing [`Events`]. (If this trait impl was omitted, you could write `Data = ();` as an argument to [`#[widget]`][attr-widget].)
+The first of these is a [`Text`] widget, passed `&self.count` as input data. The second is a [`Row`] widget over [`Button`]s over [`AccessLabel`]s. Since we didn't specify a data mapping for this second widget, it is is passed the `Count` widget's input data (`()`).
+
+Omitting `#[widget]` on a field which is a child widget is an error; sometimes the outer `#[widget]` attribute-macro will report the issue but not always. For example, if we omit the attribute on `buttons` and run, we get a backtrace like the following:
+```
+thread 'main' (413532) panicked at /path/to/kas/crates/kas-core/src/core/data.rs:123:13:
+WidgetStatus of #INVALID: require Configured, found New
+stack backtrace:
+   0: __rustc::rust_begin_unwind
+             at /rustc/a1208bf765ba783ee4ebdc4c29ab0a0c215806ef/library/std/src/panicking.rs:698:5
+   1: core::panicking::panic_fmt
+             at /rustc/a1208bf765ba783ee4ebdc4c29ab0a0c215806ef/library/core/src/panicking.rs:75:14
+   2: kas_core::core::data::WidgetStatus::require
+             at /path/to/kas/crates/kas-core/src/core/data.rs:123:13
+   3: kas_core::core::data::WidgetStatus::size_rules
+             at /path/to/kas/crates/kas-core/src/core/data.rs:157:18
+   4: <kas_widgets::list::List<C,D> as kas_core::core::layout::Layout>::size_rules
+             at /path/to/kas/crates/kas-widgets/src/list.rs:207:1
+   5: <custom_widget::Counter as kas_core::core::layout::MacroDefinedLayout>::size_rules::{{closure}}
+             at ./examples/custom-widget.rs:7:1
+  ...
+  27: custom_widget::main
+             at ./examples/custom-widget.rs:55:22
+```
+This tells us that some widget should have been `Configured` but had status `New` when calling `size_rules` — because we forgot to say that `buttons` is a `#[widget]` and thus needs to be configured. (This is in fact a debug-mode only check; release builds crash with a much-less-useful backtrace.)
+
+### Layout
+
+All widgets must implement the [`Layout`] trait, but only a few do so directly. Most, instead, use the `#[layout]` attribute-macro.
+
+```rust,ignore
+    #[layout(column![
+        self.display.align(AlignHints::CENTER),
+        self.buttons,
+    ])]
+    struct Counter { /* .. */ }
+```
+
+In this case, we are *not* using the [`column!`] macro (which would not be able to reference `self.display`) but rather an emulation of it. Behaviour should be identical aside from this ability to reference struct fields and not needing to `use kas::widgets::column`.
+
+### Widget traits
+
+[`Widget`] has super-trait [`Tile`] which has super-trait [`Layout`]. Futher, [`Events`] is usually implemented (unless there is no event-handling logic). Impls of any of these traits may appear in a widget implementation, but none are required.
+
+It is however required to define the associated type [`Widget::Data`]. Since it is common to implement [`Events`] instead of [`Widget`] and `trait Events: Widget`, the `#[widget]` macro allows you to take the liberty of defining `type Data` on `Events` instead of `Widget`:
 ```rust
 # extern crate kas;
 # use kas::prelude::*;
@@ -143,22 +180,26 @@ We can use this attribute to configure the child widget's input data too: in thi
 # }
 ```
 
-Notice here that after mutating `self.count` we call `cx.update(self.as_node(data))` in order to update `self` (and all children recursively). (In this case it would suffice to update only `display`, e.g. via `cx.update(self.display.as_node(&self.count))`, if you prefer to trade complexity for slightly more efficient code.)
+In this case we implement one event-handling method, [`Events::handle_messages`], to update `self.count` when an `Increment` message is received.
 
-**Fifth**, we must specify widget layout somehow. There are two main ways of doing this: implement [`Layout`] or use the `layout` argument of [`#[widget]`][attr-widget]. To recap, we use:
-```ignore
-    #[widget{
-        layout = column![
-            align!(center, self.display),
-            self.buttons,
-        ];
-    }]
-```
-This is macro-parsed layout syntax (not real macros). Don't use [`kas::column!`] here; it won't know what `self.display` is!
+#### Updating state
+
+When updating local state in a custom widget, it is requried to explicitly trigger an update to any widgets using that state as their input data. This can be done in a few ways:
+
+-   <code>cx.[action][](self, [Action::UPDATE])</code> will notify that an update to `self` (and children) is required
+-   <code>cx.[update][](self.[as_node][](data))</code> will update `self` (and children) immediately
+-   <code>cx.[update][](self.display.[as_node][](&self.count))</code> will update `self.display` immediately
+
+Note that previously:
+
+-   We used [`Adapt::on_message`] to update state: this automatically updates children
+-   We used [`AppData::handle_messages`]: again, this automatically updates children
+
+Custom widgets are not the same in this regard.
 
 Don't worry about remembering each step; macro diagnostics should point you in the right direction. Detection of fields which are child widgets is however imperfect (nor can it be), so try to at least remember to apply `#[widget]` attributes.
 
-### Aside: child widget type
+### Aside: the type of child widgets
 
 Our `Counter` has two (explicit) child widgets, and we must specify the type of each:
 ```rust
@@ -175,43 +216,32 @@ Our `Counter` has two (explicit) child widgets, and we must specify the type of 
         #[widget(&self.count)]
         display: Text<i32, String>,
         #[widget]
-        buttons: Row<Button<AccessLabel>>,
+        buttons: Row<[Button<AccessLabel>; 2]>,
 #         count: i32,
 #     }
 # }
 ```
-Here, this is no problem (though note that we used `Row::new([..])` not `kas::row![..]` specifically to have a known widget type). In other cases, widget types can get hard (or even impossible) to write.
+There is no real issue in this case, but widget types can get significantly harder to write than `Row<[Button<AccessLabel>; 2]>`. Worse, some widget types are impossible to write (e.g. the result of [`row!`] or widget generics instantiated with a closure). So what can we do instead?
 
-It would therefore be nice if we could just write `impl Widget<Data = ()>` in these cases and be done. Alas, Rust does not support this. We are not completely without options however:
-
--   We could define our `buttons` directly within `layout` instead of as a field. Alas, this doesn't work when passing a field as input data (as used by `display`), or when code must refer to the child by name.
--   We could box the widget with `Box<dyn Widget<Data = ()>>`. (This is what the `layout` syntax does for embedded widgets.)
--   The [`impl_anon!`] macro *does* support `impl Trait` syntax. The required code is unfortunately a bit hacky (hidden type generics) and might sometimes cause issues.
--   It looks likely that Rust will stabilise support for [`impl Trait` in type aliases](https://doc.rust-lang.org/nightly/unstable-book/language-features/type-alias-impl-trait.html) "soon". This requires writing a type-def outside of the widget definition but is supported in nightly:
+-   It would be nice if `impl Widget<Data = ()>` worked; alas, it does not, and I have seen little interest in support for field-position-impl-trait. But I believe Rust *could* support this.
+-   Rust may stabilise support for [`impl Trait` in type aliases](https://doc.rust-lang.org/nightly/unstable-book/language-features/type-alias-impl-trait.html) "soon". This requires writing a type-def outside of the widget definition but is supported in nightly Rust:
 
     ```rust,ignore
     type MyButtons = impl Widget<Data = ()>;
     ```
+-   We could use a `Box`: `Box<dyn Widget<Data = ()>>`.
+-   We could embed our `buttons` in the `#[layout]` instead of using a field. This is not always possible (e.g. for `display` which takes `&self.count` as input data). Since `#[layout]` uses `Box` internally this is effectively the same as above.
+-   The [`impl_anon!`] macro *does* support `impl Trait` syntax. The required code is unfortunately *a bit* hacky (hidden type generics) and at least a little prone to spitting out misleading error messages instead of *just working*. Best practice is to cross your fingers.
 
-### Aside: uses
-
-Before Kas 0.14, *all* widgets were custom widgets. (Yes, this made simple things hard.)
-
-In the future, custom widgets *might* become obsolete, or might at least change significantly.
-
-But for now, custom widgets still have their uses:
-
--   Anything with a custom [`Layout`] implementation. E.g. if you want some custom graphics, you can either use [`kas::resvg::Canvas`] or a custom widget.
--   Child widgets as named fields allows direct read/write access on these widgets. For example, instead of passing a [`Text`] widget the count to display via input data, we *could* use a simple [`Label`] widget and re-write it every time `count` changes.
--   `Adapt` is the "standard" way of storing local state, but as seen here custom widgets may also do so, and you may have good reasons for this (e.g. to provide different data to different children without lots of mapping).
--   Since *input data* is a new feature, there are probably some cases it doesn't support yet. One notable example is anything requring a lifetime.
-
+[`impl_self`]: https://docs.rs/impl-tools/latest/impl_tools/attr.impl_self.html
 [`impl_scope!`]: https://docs.rs/impl-tools/latest/impl_tools/macro.impl_scope.html
 [`impl_anon!`]: https://docs.rs/impl-tools/latest/impl_tools/macro.impl_anon.html
 [attr-widget]: https://docs.rs/kas/latest/kas/attr.widget.html
 [`Widget`]: https://docs.rs/kas/latest/kas/trait.Widget.html
+[`Widget::Data`]: https://docs.rs/kas/latest/kas/trait.Widget.html#associatedtype.Data
+[`Tile`]: https://docs.rs/kas/latest/kas/trait.Tile.html
 [`Events`]: https://docs.rs/kas/latest/kas/trait.Events.html
-[`kas::column!`]: https://docs.rs/kas/latest/kas/macro.column.html
+[`Events::handle_messages`]: https://docs.rs/kas/latest/kas/trait.Events.html#method.handle_messages
 [`Default`]: https://doc.rust-lang.org/stable/std/default/trait.Default.html
 [`Layout`]: https://docs.rs/kas/latest/kas/trait.Layout.html
 [impl-tools]: https://crates.io/crates/impl-tools
@@ -219,3 +249,14 @@ But for now, custom widgets still have their uses:
 [`Label`]: https://docs.rs/kas/latest/kas/widgets/struct.Label.html
 [`Text`]: https://docs.rs/kas/latest/kas/widgets/struct.Text.html
 [`kas::resvg::Canvas`]: https://docs.rs/kas/latest/kas/resvg/struct.Canvas.html
+[`column!`]: https://docs.rs/kas/latest/kas/widgets/macro.column.html
+[`row!`]: https://docs.rs/kas/latest/kas/widgets/macro.row.html
+[`Button`]: https://docs.rs/kas/latest/kas/widgets/struct.Button.html
+[`Row`]: https://docs.rs/kas/latest/kas/widgets/struct.Row.html
+[`AccessLabel`]: https://docs.rs/kas/latest/kas/widgets/struct.AccessLabel.html
+[action]: https://docs.rs/kas/latest/kas/event/struct.EventState.html#method.action
+[update]: https://docs.rs/kas/latest/kas/event/struct.EventCx.html#method.update
+[Action::UPDATE]: https://docs.rs/kas/latest/kas/struct.Action.html#associatedconstant.UPDATE
+[as_node]: https://docs.rs/kas/latest/kas/trait.Widget.html#method.as_node
+[`Adapt::on_message`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html#method.on_message
+[`AppData::handle_messages`]: https://docs.rs/kas/latest/kas/app/trait.AppData.html#tymethod.handle_messages
