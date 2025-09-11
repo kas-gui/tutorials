@@ -9,27 +9,23 @@ We complicate the previous example just a little bit!
 
 ```rust
 # extern crate kas;
-use kas::widgets::{format_data, label_any, Adapt, Button, Slider};
-use kas::{messages::MessageStack, Action, Window};
+use kas::widgets::{AdaptWidget, Button, Label, Slider, column, format_data, row};
+use kas::window::Window;
 
 #[derive(Clone, Debug)]
 struct Increment(i32);
 
 #[derive(Clone, Copy, Debug)]
 struct Count(i32);
-
-impl kas::app::AppData for Count {
-    fn handle_messages(&mut self, messages: &mut MessageStack) -> Action {
+impl kas::runner::AppData for Count {
+    fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {
         if let Some(Increment(add)) = messages.try_pop() {
             self.0 += add;
-            Action::UPDATE
-        } else {
-            Action::empty()
         }
     }
 }
 
-fn counter() -> impl kas::Widget<Data = Count> {
+fn counter(title: &str) -> Window<Count> {
     // Per window state: (count, increment).
     type Data = (Count, i32);
     let initial: Data = (Count(0), 1);
@@ -38,38 +34,40 @@ fn counter() -> impl kas::Widget<Data = Count> {
     struct SetValue(i32);
 
     let slider = Slider::right(1..=10, |_, data: &Data| data.1).with_msg(SetValue);
-    let ui = kas::column![
+    let ui = column![
         format_data!(data: &Data, "Count: {}", data.0.0),
         row![slider, format_data!(data: &Data, "{}", data.1)],
         row![
-            Button::new(label_any("Sub")).with(|cx, data: &Data| cx.push(Increment(-data.1))),
-            Button::new(label_any("Add")).with(|cx, data: &Data| cx.push(Increment(data.1))),
+            Button::new(Label::new_any("Sub")).with(|cx, data: &Data| cx.push(Increment(-data.1))),
+            Button::new(Label::new_any("Add")).with(|cx, data: &Data| cx.push(Increment(data.1))),
         ],
     ];
 
-    Adapt::new(ui, initial)
+    let ui = ui
+        .with_state(initial)
         .on_update(|_, state, count| state.0 = *count)
-        .on_message(|_, state, SetValue(v)| state.1 = v)
+        .on_message(|_, state, SetValue(v)| state.1 = v);
+    Window::new(ui, title).escapable()
 }
 
-fn main() -> kas::app::Result<()> {
+fn main() -> kas::runner::Result<()> {
     env_logger::init();
 
-    let theme = kas_wgpu::ShadedTheme::new().with_font_size(24.0);
+    let count = Count(0);
+    let theme = kas_wgpu::ShadedTheme::new();
 
-    kas::app::Default::with_theme(theme)
-        .build(Count(0))?
-        .with(Window::new(counter(), "Counter 1"))
-        .with(Window::new(counter(), "Counter 2"))
+    let mut runner = kas::runner::Runner::with_theme(theme).build(count)?;
+    let _ = runner.config_mut().font.set_size(24.0);
+    runner
+        .with(counter("Counter 1"))
+        .with(counter("Counter 2"))
         .run()
 }
 ```
 
 ## AppData
 
-In the previous example, our top-level `AppData` was `()`: `.build(())`.
-
-This time, we want to store our counter in top-level `AppData`. But, as we saw with `Adapt`, state which doesn't react to messages is useless; hence we use a custom type and implement a message handler:
+In the previous example, our top-level `AppData` was `()` and our mutable state was stored in an [`Adapt`] widget. This time, we will store our counter in top-level `AppData`, in a custom type which includes a message handler:
 ```rust
 # extern crate kas;
 # use kas::{messages::MessageStack, Action};
@@ -90,13 +88,9 @@ impl kas::app::AppData for Count {
     }
 }
 ```
-[`AppData::handle_messages`] is less succinct than [`Adapt::on_message`], but dones the same job. The method notifies when widgets must be updated by returning [`Action::UPDATE`].
+[`AppData::handle_messages`] is more verbose than [`Adapt::on_message`], but does the same job. The method notifies when widgets must be updated by returning [`Action::UPDATE`].
 
-### As an input
-
-We initialise our app with an instance of `Count`: `.build(Count(0))`.
-
-Note that `Count` is now an input to the widgets we construct:
+To integrate this into our example, we pass a `Count` object into [`kas::runner::Builder::build`] and adjust the prototype of `counter` to:
 ```rust
 # extern crate kas;
 # use kas::{messages::MessageStack, Action};
@@ -125,7 +119,7 @@ let initial: Data = (Count(0), 1);
 ```
 Note that our local data includes a *copy* of the top-level data `Count` (along with an initial value, `Count(0)`, which will be replaced before it is ever used).
 
-We'll skip right over the widget declarations to the new `Adapt` node:
+We'll skip right over the widget declarations to the new [`Adapt`] node:
 ```rust
 # extern crate kas;
 # use kas::widgets::{label_any, Adapt};
@@ -136,18 +130,21 @@ We'll skip right over the widget declarations to the new `Adapt` node:
 # struct SetValue(i32);
 # let ui = label_any("");
 # let initial = (Count(0), 1);
-Adapt::new(ui, initial)
-    .on_update(|_, state, count| state.0 = *count)
-    .on_message(|_, state, SetValue(v)| state.1 = v)
+    let ui = ui
+        .with_state(initial)
+        .on_update(|_, state, count| state.0 = *count)
+        .on_message(|_, state, SetValue(v)| state.1 = v);
 # }
 ```
 The notable addition here is [`Adapt::on_update`], which takes a closure over the expected mutable reference to local `state` as well as *input* data `count` (i.e. the top-level data), allowing us to update local state with the latest top-level `count`.
 
-Aside: this is really not how *adapting* top-level data with local state is *supposed* to work. Ideally, we'd omit the local copy of `Count` entirely and pass something like `(&Count, i32)` to local widgets. But, as any Rustacean knows, a reference requires a lifetime, and dealing with lifetimes can get complicated. The plan is to update our approach once Rust supports object-safe GATs (also known as Extended Generic Associated Types).
+Aside: you may wonder why we store `count` in [`Adapt`]'s state at all. Why not simply pass `(&Count, &i32)` (count, increment) down to the local UI? The answer is that we can't, because of lifetimes. To be specific, the input data type is formalized as an associated type, [`Widget::Data`], which must outlive instances of that type: that is any references embedded in an input data type must outlive the instances of the widgets they are passed to. Moreover, [`AppData`] requires lifetime `'static` (more as a simplification than because we truely couldn't support non-static lifetimes here, though there really isn't much use for them).
 
-## Multiple windows
+Aside aside: could we not make [`Widget::Data`] into a Generic Associated Type (GAT) to support lifetimes shorter than that of the widget object? Well, yes, but traits with GATs are not (yet) object-safe. This is a problem because object-safe widget types are important (both for variadic layout — e.g. a `TabStack` where pages use different widget types — and more fundamentally, namely to make [`Node`] work). So *maybe* this will be possible eventually, dependent on future Rust development.
 
-It barely seems worth mentioning, but there's nothing stopping us from calling `fn counter` multiple times and constructing a new window around each:
+## Running multiple windows
+
+Constructing multiple windows under a UI runner is simple:
 ```rust
 # extern crate kas;
 # use kas::{messages::MessageStack, Action, Window};
@@ -160,15 +157,15 @@ It barely seems worth mentioning, but there's nothing stopping us from calling `
 #     kas::widgets::label_any("")
 # }
 # fn main() -> kas::app::Result<()> {
-# let theme = kas_wgpu::ShadedTheme::new().with_font_size(24.0);
-kas::app::Default::with_theme(theme)
-    .build(Count(0))?
-    .with(Window::new(counter(), "Counter 1"))
-    .with(Window::new(counter(), "Counter 2"))
-    .run()
+    let mut runner = kas::runner::Runner::with_theme(theme).build(count)?;
+    let _ = runner.config_mut().font.set_size(24.0);
+    runner
+        .with(counter("Counter 1"))
+        .with(counter("Counter 2"))
+        .run()
 # }
 ```
-Of course, each window has its own local state stored in its [`Adapt`] node (the `increment`) while sharing the top-level `Count`.
+Each window has its own local state stored in its [`Adapt`] node (the `increment`) while sharing the top-level `Count`.
 
 [`AppData`]: https://docs.rs/kas/latest/kas/app/trait.AppData.html
 [`AppData::handle_messages`]: https://docs.rs/kas/latest/kas/app/trait.AppData.html#tymethod.handle_messages
@@ -176,3 +173,6 @@ Of course, each window has its own local state stored in its [`Adapt`] node (the
 [`Adapt::on_message`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html#method.on_message
 [`Action::UPDATE`]: https://docs.rs/kas/latest/kas/struct.Action.html#associatedconstant.UPDATE
 [`Adapt::on_update`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html#method.on_update
+[`kas::runner::Builder::build`]: https://docs.rs/kas/latest/kas/runner/struct.Builder.html#method.build
+[`Widget::Data`]: https://docs.rs/kas/latest/kas/trait.Widget.html#associatedtype.Data
+[`Node`]: https://docs.rs/kas/latest/kas/struct.Node.html
