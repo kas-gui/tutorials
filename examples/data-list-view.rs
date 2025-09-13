@@ -11,15 +11,15 @@ enum Control {
 }
 
 #[derive(Debug)]
-struct Data {
+struct MyData {
     last_change: GeneratorChanges<usize>,
     last_key: usize,
     active: usize,
     strings: HashMap<usize, String>,
 }
-impl Data {
+impl MyData {
     fn new() -> Self {
-        Data {
+        MyData {
             last_change: GeneratorChanges::None,
             last_key: 0,
             active: 0,
@@ -47,25 +47,25 @@ impl Data {
     }
 }
 
-type Item = (usize, String); // (active index, entry's text)
+type MyItem = (usize, String); // (active index, entry's text)
 
 #[derive(Debug)]
 struct ListEntryGuard(usize);
 impl EditGuard for ListEntryGuard {
-    type Data = Item;
+    type Data = MyItem;
 
-    fn update(edit: &mut EditField<Self>, cx: &mut ConfigCx, data: &Item) {
+    fn update(edit: &mut EditField<Self>, cx: &mut ConfigCx, data: &MyItem) {
         if !edit.has_edit_focus() {
             edit.set_string(cx, data.1.to_string());
         }
     }
 
-    fn activate(edit: &mut EditField<Self>, cx: &mut EventCx, _: &Item) -> IsUsed {
+    fn activate(edit: &mut EditField<Self>, cx: &mut EventCx, _: &MyItem) -> IsUsed {
         cx.push(Control::Select(edit.guard.0));
         Used
     }
 
-    fn edit(edit: &mut EditField<Self>, cx: &mut EventCx, _: &Item) {
+    fn edit(edit: &mut EditField<Self>, cx: &mut EventCx, _: &MyItem) {
         cx.push(Control::Update(edit.guard.0, edit.clone_string()));
     }
 }
@@ -83,18 +83,18 @@ mod ListEntry {
         #[widget(&())]
         label: Label<String>,
         #[widget]
-        radio: RadioButton<Item>,
+        radio: RadioButton<MyItem>,
         #[widget]
         edit: EditBox<ListEntryGuard>,
     }
 
     impl Events for Self {
-        type Data = Item;
+        type Data = MyItem;
     }
 }
 
 struct ListEntryDriver;
-impl Driver<usize, Item> for ListEntryDriver {
+impl Driver<usize, MyItem> for ListEntryDriver {
     type Widget = ListEntry;
 
     fn make(&mut self, key: &usize) -> Self::Widget {
@@ -104,7 +104,7 @@ impl Driver<usize, Item> for ListEntryDriver {
             label: Label::new(format!("Entry number {}", n + 1)),
             radio: RadioButton::new_msg(
                 "display this entry",
-                move |_, data: &Item| data.0 == n,
+                move |_, data: &MyItem| data.0 == n,
                 move || Control::Select(n),
             ),
             edit: EditBox::new(ListEntryGuard(n)).with_width_em(18.0, 30.0),
@@ -119,12 +119,12 @@ impl Driver<usize, Item> for ListEntryDriver {
 #[derive(Default)]
 struct Generator;
 impl DataGenerator<usize> for Generator {
-    type Data = Data;
+    type Data = MyData;
     type Key = usize;
-    type Item = Item;
+    type Item = MyItem;
 
     fn update(&mut self, data: &Self::Data) -> GeneratorChanges<usize> {
-        // We assume that `Data::handle` has only been called once since this
+        // We assume that `MyData::handle` has only been called once since this
         // method was last called.
         data.last_change.clone()
     }
@@ -149,13 +149,13 @@ fn main() -> kas::runner::Result<()> {
     let list = ListView::down(clerk, ListEntryDriver);
     let tree = column![
         "Contents of selected entry:",
-        Text::new(|_, data: &Data| data.get_string(data.active)),
+        Text::new(|_, data: &MyData| data.get_string(data.active)),
         Separator::new(),
         ScrollBars::new(list).with_fixed_bars(false, true),
     ];
 
     let ui = tree
-        .with_state(Data::new())
+        .with_state(MyData::new())
         .on_message(|_, data, control| data.handle(control));
 
     let window = Window::new(ui, "Data list view");
