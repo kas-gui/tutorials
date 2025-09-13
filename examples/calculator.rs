@@ -1,8 +1,9 @@
-use kas::event::NamedKey;
-use kas::prelude::*;
-use kas::widgets::{AccessLabel, Adapt, Button, EditBox};
 use std::num::ParseFloatError;
 use std::str::FromStr;
+
+use kas::event::NamedKey;
+use kas::prelude::*;
+use kas::widgets::{AccessLabel, Adapt, Button, EditBox, column, grid};
 
 type Key = kas::event::Key<kas::event::SmolStr>;
 
@@ -15,15 +16,15 @@ fn key_button_with(label: &str, key: Key) -> Button<AccessLabel> {
     Button::label_msg(label, key.clone()).with_access_key(key)
 }
 
-fn calc_ui() -> impl Widget<Data = ()> {
+fn calc_ui() -> Window<()> {
     // We could use kas::widget::Text, but EditBox looks better.
     let display = EditBox::string(|calc: &Calculator| calc.display())
         .with_multi_line(true)
-        .with_lines(3, 3)
+        .with_lines(3.0, 3.0)
         .with_width_em(5.0, 10.0);
 
     // We use map_any to avoid passing input data (not wanted by buttons):
-    let buttons = kas::grid! {
+    let buttons = grid! {
         // Key bindings: C, Del
         (0, 0) => Button::label_msg("&clear", Key::Named(NamedKey::Clear))
             .with_access_key(NamedKey::Delete.into()),
@@ -49,22 +50,22 @@ fn calc_ui() -> impl Widget<Data = ()> {
     }
     .map_any();
 
-    Adapt::new(kas::column![display, buttons], Calculator::new())
-        .on_message(|_, calc, key| calc.handle(key))
-        .on_configure(|cx, _| {
-            cx.disable_nav_focus(true);
-            cx.enable_alt_bypass(true);
-        })
+    let ui = Adapt::new(column![display, buttons], Calculator::new())
+        .on_message(|_, calc, key| calc.handle(key));
+
+    Window::new(ui, "Calculator")
+        .escapable()
+        .with_alt_bypass()
+        .without_nav_focus()
 }
 
-fn main() -> kas::app::Result<()> {
+fn main() -> kas::runner::Result<()> {
     env_logger::init();
 
-    let theme = kas_wgpu::ShadedTheme::new().with_font_size(16.0);
-    kas::app::Default::with_theme(theme)
-        .build(())?
-        .with(Window::new(calc_ui(), "Calculator"))
-        .run()
+    let theme = kas_wgpu::ShadedTheme::new();
+    let mut app = kas::runner::Runner::with_theme(theme).build(())?;
+    let _ = app.config_mut().font.set_size(24.0);
+    app.with(calc_ui()).run()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

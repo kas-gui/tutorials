@@ -1,28 +1,29 @@
 use kas::prelude::*;
-use kas::widgets::{format_value, Adapt, Button};
+use kas::widgets::{Button, column, format_value, row};
 
 #[derive(Clone, Debug)]
 struct Increment(i32);
 
 fn counter() -> impl Widget<Data = ()> {
-    let tree = kas::column![
-        align!(center, format_value!("{}")),
-        kas::row![
-            Button::label_msg("−", Increment(-1)),
-            Button::label_msg("+", Increment(1)),
-        ]
-        .map_any(),
+    let buttons = row![
+        Button::label_msg("−", Increment(-1)),
+        Button::label_msg("+", Increment(1)),
+    ];
+    let tree = column![
+        format_value!("{}").align(AlignHints::CENTER),
+        buttons.map_any(),
     ];
 
-    Adapt::new(tree, 0).on_message(|_, count, Increment(add)| *count += add)
+    tree.with_state(0)
+        .on_message(|_, count, Increment(add)| *count += add)
 }
 
-fn main() -> kas::app::Result<()> {
+fn main() -> kas::runner::Result<()> {
     env_logger::init();
 
-    let theme = kas::theme::SimpleTheme::new().with_font_size(24.0);
-    kas::app::Default::with_theme(theme)
-        .build(())?
-        .with(Window::new(counter(), "Counter"))
-        .run()
+    let theme = kas::theme::SimpleTheme::new();
+    let mut app = kas::runner::Runner::with_theme(theme).build(())?;
+    let _ = app.config_mut().font.set_size(24.0);
+    let window = Window::new(counter(), "Counter").escapable();
+    app.with(window).run()
 }
