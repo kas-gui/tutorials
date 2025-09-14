@@ -8,4 +8,3 @@
 - [Calculator: make_widget and grid](calculator.md)
 - [Custom widgets](custom-widget.md)
 - [Data list view](data-list-view.md)
-- [Data models](data-models.md)
