@@ -1,17 +1,17 @@
 use kas::prelude::*;
-use kas::widgets::{Button, column, format_value, row};
+use kas::widgets::{Button, column, format_label, row};
 
 #[derive(Clone, Debug)]
 struct Increment(i32);
 
 fn counter() -> impl Widget<Data = ()> {
-    let buttons = row![
-        Button::label_msg("−", Increment(-1)),
-        Button::label_msg("+", Increment(1)),
-    ];
     let tree = column![
-        format_value!("{}").align(AlignHints::CENTER),
-        buttons.map_any(),
+        format_label!("{}").align(AlignHints::CENTER),
+        row![
+            Button::label_msg("−", Increment(-1)),
+            Button::label_msg("+", Increment(1)),
+        ]
+        .map_any(),
     ];
 
     tree.with_state(0)

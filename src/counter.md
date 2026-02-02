@@ -9,19 +9,19 @@ The last example was a bit boring. Lets get interactive!
 ```rust
 # extern crate kas;
 use kas::prelude::*;
-use kas::widgets::{Button, column, format_value, row};
+use kas::widgets::{Button, column, format_label, row};
 
 #[derive(Clone, Debug)]
 struct Increment(i32);
 
 fn counter() -> impl Widget<Data = ()> {
-    let buttons = row![
-        Button::label_msg("−", Increment(-1)),
-        Button::label_msg("+", Increment(1)),
-    ];
     let tree = column![
-        format_value!("{}").align(AlignHints::CENTER),
-        buttons.map_any(),
+        format_label!("{}").align(AlignHints::CENTER),
+        row![
+            Button::label_msg("−", Increment(-1)),
+            Button::label_msg("+", Increment(1)),
+        ]
+        .map_any(),
     ];
 
     tree.with_state(0)
@@ -78,17 +78,17 @@ Our user interface should be a widget tree: lets use a [`row!`] of buttons and a
 ```rust
 # extern crate kas;
 # use kas::prelude::*;
-# use kas::widgets::{Adapt, AdaptWidget, Button, column, format_value, row};
+# use kas::widgets::{Adapt, AdaptWidget, Button, column, format_label, row};
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
 # fn counter() -> impl Widget<Data = ()> {
-    let buttons = row![
-        Button::label_msg("−", Increment(-1)),
-        Button::label_msg("+", Increment(1)),
-    ];
     let tree = column![
-        format_value!("{}").align(AlignHints::CENTER),
-        buttons.map_any(),
+        format_label!("{}").align(AlignHints::CENTER),
+        row![
+            Button::label_msg("−", Increment(-1)),
+            Button::label_msg("+", Increment(1)),
+        ]
+        .map_any(),
     ];
     # tree.with_state(0)
 # }
@@ -103,7 +103,7 @@ The [`Widget::Data`] type mentioned above is used to provide all Kas widgets wit
 
 Why? Most UIs need some form of mutable state. Some modern UI toolkits like [Iced](https://github.com/iced-rs/iced) and [Xilem](https://github.com/linebender/xilem) reconstruct their view tree (over a hidden widget tree) when this state changes; [egui](https://github.com/emilk/egui) goes even further and reconstructs the whole widget tree. Older stateful toolkits like GTK and Qt require binding widget properties or explicitly updating widgets. Kas finds a compromise between these models: widgets are stateful, yet derived from a common object and updated as required.
 
-In our case, [`format_value!`] constructs a [`Text`] widget which formats its input data (an `i32`) to a `String` and displays that.
+In our case, [`format_label!`] constructs a [`Text`] widget which formats its input data (an `i32`) to a `String` and displays that.
 
 Since it would be inconvenient to require an entire UI tree to use the same input data, Kas provides some tools to map that data (or in Xilem/Druid terminology, view that data through a lens):
 
@@ -120,17 +120,17 @@ The code:
 ```rust
 # extern crate kas;
 # use kas::prelude::*;
-# use kas::widgets::{format_value, Adapt};
+# use kas::widgets::{format_label, Adapt};
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
 # fn counter() -> impl Widget<Data = ()> {
-# let tree = format_value!("{}");
+# let tree = format_label!("{}");
     tree.with_state(0)
 # }
 ```
 calls [`AdaptWidget::with_state`] to construct an [`Adapt`] widget over `0` (with type `i32`).
 
-A reference to this (i.e. `&i32`) is passed into our display widget (`format_value!("{}")`). Meanwhile,
+A reference to this (i.e. `&i32`) is passed into our display widget (`format_label!("{}")`). Meanwhile,
 we used `buttons.map_any()` to ignore this value and pass `&()` to the [`Button`] widgets.
 
 ## Messages
@@ -148,11 +148,11 @@ In practice, message handling has three steps:
 ```rust
 # extern crate kas;
 # use kas::prelude::*;
-# use kas::widgets::{format_value, Adapt};
+# use kas::widgets::{format_label, Adapt};
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
 # fn counter() -> impl Widget<Data = ()> {
-# let tree = format_value!("{}");
+# let tree = format_label!("{}");
     tree.with_state(0)
         .on_message(|_, count, Increment(add)| *count += add)
 # }
@@ -181,7 +181,7 @@ Should multiple messages use `enum` variants or discrete struct types? Either op
 [`Widget::Data`]: https://docs.rs/kas/latest/kas/trait.Widget.html#associatedtype.Data
 [`Events::update`]: https://docs.rs/kas/latest/kas/trait.Events.html#method.update
 [`Text`]: https://docs.rs/kas/latest/kas/widgets/struct.Text.html
-[`format_value!`]: https://docs.rs/kas/latest/kas/widgets/macro.format_value.html
+[`format_label!`]: https://docs.rs/kas/latest/kas/widgets/macro.format_label.html
 [`Adapt`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html
 [`EventCx::push`]: https://docs.rs/kas/latest/kas/event/struct.EventCx.html#method.push
 [`EventCx::try_pop`]: https://docs.rs/kas/latest/kas/event/struct.EventCx.html#method.try_pop
