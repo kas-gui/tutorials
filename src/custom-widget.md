@@ -14,7 +14,7 @@ Here we rewrite the counter as a custom widget. There's no reason to do so for t
 ```rust
 # extern crate kas;
 use kas::prelude::*;
-use kas::widgets::{AccessLabel, Button, Row, Text, format_value};
+use kas::widgets::{AccessLabel, Button, Row, Text, format_label};
 
 #[derive(Clone, Debug)]
 struct Increment(i32);
@@ -38,7 +38,7 @@ mod Counter {
         fn new(count: i32) -> Self {
             Counter {
                 core: Default::default(),
-                display: format_value!("{}"),
+                display: format_label!("{}"),
                 buttons: Row::new([
                     Button::label_msg("-", Increment(-1)),
                     Button::label_msg("+", Increment(1)),
