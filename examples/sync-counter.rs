@@ -1,4 +1,4 @@
-use kas::widgets::{AdaptWidget, Button, Label, Slider, column, format_data, row};
+use kas::widgets::{AdaptWidget, Button, Label, Slider, column, format_label, row};
 use kas::window::Window;
 
 #[derive(Clone, Debug)]
@@ -7,7 +7,7 @@ struct Increment(i32);
 #[derive(Clone, Copy, Debug)]
 struct Count(i32);
 impl kas::runner::AppData for Count {
-    fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {
+    fn handle_message(&mut self, messages: &mut impl kas::runner::ReadMessage) {
         if let Some(Increment(add)) = messages.try_pop() {
             self.0 += add;
         }
@@ -24,8 +24,8 @@ fn counter(title: &str) -> Window<Count> {
 
     let slider = Slider::right(1..=10, |_, data: &Data| data.1).with_msg(SetValue);
     let ui = column![
-        format_data!(data: &Data, "Count: {}", data.0.0),
-        row![slider, format_data!(data: &Data, "{}", data.1)],
+        format_label!(data: &Data, "Count: {}", data.0.0),
+        row![slider, format_label!(data: &Data, "{}", data.1)],
         row![
             Button::new(Label::new_any("Sub")).with(|cx, data: &Data| cx.push(Increment(-data.1))),
             Button::new(Label::new_any("Add")).with(|cx, data: &Data| cx.push(Increment(data.1))),
@@ -34,7 +34,7 @@ fn counter(title: &str) -> Window<Count> {
 
     let ui = ui
         .with_state(initial)
-        .on_update(|_, state, count| state.0 = *count)
+        .on_update(|_, _, state, count| state.0 = *count)
         .on_message(|_, state, SetValue(v)| state.1 = v);
     Window::new(ui, title).escapable()
 }

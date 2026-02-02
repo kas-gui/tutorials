@@ -9,7 +9,7 @@ We complicate the previous example just a little bit!
 
 ```rust
 # extern crate kas;
-use kas::widgets::{AdaptWidget, Button, Label, Slider, column, format_data, row};
+use kas::widgets::{AdaptWidget, Button, Label, Slider, column, format_label, row};
 use kas::window::Window;
 
 #[derive(Clone, Debug)]
@@ -18,7 +18,7 @@ struct Increment(i32);
 #[derive(Clone, Copy, Debug)]
 struct Count(i32);
 impl kas::runner::AppData for Count {
-    fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {
+    fn handle_message(&mut self, messages: &mut impl kas::runner::ReadMessage) {
         if let Some(Increment(add)) = messages.try_pop() {
             self.0 += add;
         }
@@ -35,8 +35,8 @@ fn counter(title: &str) -> Window<Count> {
 
     let slider = Slider::right(1..=10, |_, data: &Data| data.1).with_msg(SetValue);
     let ui = column![
-        format_data!(data: &Data, "Count: {}", data.0.0),
-        row![slider, format_data!(data: &Data, "{}", data.1)],
+        format_label!(data: &Data, "Count: {}", data.0.0),
+        row![slider, format_label!(data: &Data, "{}", data.1)],
         row![
             Button::new(Label::new_any("Sub")).with(|cx, data: &Data| cx.push(Increment(-data.1))),
             Button::new(Label::new_any("Add")).with(|cx, data: &Data| cx.push(Increment(data.1))),
@@ -45,7 +45,7 @@ fn counter(title: &str) -> Window<Count> {
 
     let ui = ui
         .with_state(initial)
-        .on_update(|_, state, count| state.0 = *count)
+        .on_update(|_, _, state, count| state.0 = *count)
         .on_message(|_, state, SetValue(v)| state.1 = v);
     Window::new(ui, title).escapable()
 }
@@ -70,7 +70,6 @@ fn main() -> kas::runner::Result<()> {
 In the previous example, our top-level `AppData` was `()` and our mutable state was stored in an [`Adapt`] widget. This time, we will store our counter in top-level `AppData`, in a custom type which includes a message handler:
 ```rust
 # extern crate kas;
-# use kas::{runner::MessageStack, Action};
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
 
@@ -78,23 +77,22 @@ In the previous example, our top-level `AppData` was `()` and our mutable state 
 struct Count(i32);
 
 impl kas::runner::AppData for Count {
-    fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {
+    fn handle_message(&mut self, messages: &mut impl kas::runner::ReadMessage) {
         if let Some(Increment(add)) = messages.try_pop() {
             self.0 += add;
         }
     }
 }
 ```
-[`AppData::handle_messages`] is more verbose than [`Adapt::on_message`], but does the same job.
+[`AppData::handle_message`] is more verbose than [`Adapt::on_message`], but does the same job.
 
 To integrate this into our example, we pass a `Count` object into [`kas::runner::Builder::build`] and adjust the prototype of `counter` to:
 ```rust
 # extern crate kas;
-# use kas::{runner::MessageStack, Action};
 # #[derive(Clone, Copy, Debug)]
 # struct Count(i32);
 # impl kas::runner::AppData for Count {
-#     fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {}
+#     fn handle_message(&mut self, messages: &mut impl kas::runner::ReadMessage) {}
 # }
 fn counter() -> impl kas::Widget<Data = Count> {
     // ...
@@ -129,7 +127,7 @@ We'll skip right over the widget declarations to the new [`Adapt`] node:
 # let initial = (Count(0), 1);
     let ui = ui
         .with_state(initial)
-        .on_update(|_, state, count| state.0 = *count)
+        .on_update(|_, _, state, count| state.0 = *count)
         .on_message(|_, state, SetValue(v)| state.1 = v);
     # ui
 # }
@@ -145,11 +143,11 @@ Aside aside: could we not make [`Widget::Data`] into a Generic Associated Type (
 Constructing multiple windows under a UI runner is simple:
 ```rust
 # extern crate kas;
-# use kas::{runner::MessageStack, Action, window::Window};
+# use kas::window::Window;
 # #[derive(Clone, Copy, Debug)]
 # struct Count(i32);
 # impl kas::runner::AppData for Count {
-#     fn handle_messages(&mut self, messages: &mut kas::runner::MessageStack) {}
+#     fn handle_message(&mut self, messages: &mut impl kas::runner::ReadMessage) {}
 # }
 # fn counter(title: &str) -> Window<Count> {
 #     Window::new(kas::widgets::Label::new_any(""), title)
@@ -168,7 +166,7 @@ Constructing multiple windows under a UI runner is simple:
 Each window has its own local state stored in its [`Adapt`] node (the `increment`) while sharing the top-level `Count`.
 
 [`AppData`]: https://docs.rs/kas/latest/kas/app/trait.AppData.html
-[`AppData::handle_messages`]: https://docs.rs/kas/latest/kas/app/trait.AppData.html#tymethod.handle_messages
+[`AppData::handle_message`]: https://docs.rs/kas/latest/kas/runner/trait.AppData.html#tymethod.handle_message
 [`Adapt`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html
 [`Adapt::on_message`]: https://docs.rs/kas/latest/kas/widgets/struct.Adapt.html#method.on_message
 [`Action::UPDATE`]: https://docs.rs/kas/latest/kas/struct.Action.html#associatedconstant.UPDATE
