@@ -36,13 +36,11 @@ Previously we adjusted the font size before the UI was started:
 # }
 ```
 
-Various aspects of fonts, themes, event handling and shortcuts may be adjusted here; see the [`Config`] struct.
+Various aspects of fonts, themes, event handling and shortcuts may be adjusted here; see the [`Config`] struct. The above snippet adjusts the default configuration before the UI is started using [`Runner::config_mut`]. The returned [`Action`] is discarded (`let _ =`) since the UI has not yet been started.
 
-The above snippet adjusts the default configuration before the UI is started using [`Runner::config_mut`]. The returned [`Action`] is discarded (`let _ =`) since the UI has not yet been started.
+Configuration may also be adjusted through config files if the Kas feature `toml` (or another serialization format) and the environment variable `KAS_CONFIG` is set (e.g. `KAS_CONFIG="path/to/config.toml"`). See [`ReadWriteFactory`] documentation.
 
-Configuration may also be accessed at run-time ([`EventState::config`]) and adjusted using [`WindowConfig::update_base`], though this has some limitations; in particular fonts are not re-selected and new widget sizes are not fully realized without manual resizing of the window.
-
-Pre-launch, one may supply a configuration factory through [`Builder::with_config`]. More specifically, this allows using a [`ReadWriteFactory`] to persist configuration to/from local storage.
+Run-time configuration of a sub-set of configurable items is possible using the [`EventConfig`] widget or by sending [`EventConfigMsg`]. Code may read configuration through [`EventState::config`] and adjust it using [`WindowConfig::update_base`], though this has some limitations; in particular fonts are not re-selected and new widget sizes are not fully realized without manual resizing of the window.
 
 
 [`Runner::config_mut`]: https://docs.rs/kas/latest/kas/runner/struct.Runner.html#method.config_mut
@@ -59,3 +57,5 @@ Pre-launch, one may supply a configuration factory through [`Builder::with_confi
 [`kas::theme::FlatTheme`]: https://docs.rs/kas/latest/kas/theme/struct.FlatTheme.html
 [`kas::theme::MultiTheme`]: https://docs.rs/kas/latest/kas/theme/struct.MultiTheme.html
 [`kas_wgpu::ShadedTheme`]: https://docs.rs/kas-wgpu/latest/kas_wgpu/struct.ShadedTheme.html
+[`EventConfig`]: https://docs.rs/kas/latest/kas/widgets/struct.EventConfig.html
+[`EventConfigMsg`]: https://docs.rs/kas/latest/kas/config/enum.EventConfigMsg.html
