@@ -1,5 +1,3 @@
 [book]
 authors = ["Diggory Hardy"]
-multilingual = false
-src = "src"
 title = "Kas Tutorials"
