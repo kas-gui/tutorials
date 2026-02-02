@@ -1,6 +1,6 @@
 # Data list view
 
-*Topics: view widgets, `DataGenerator`*
+*Topics: view widgets, clerks*
 
 ![Data list view](screenshots/data-list-view.png)
 
@@ -82,19 +82,17 @@ struct ListEntryGuard(usize);
 impl EditGuard for ListEntryGuard {
     type Data = MyItem;
 
-    fn update(edit: &mut EditField<Self>, cx: &mut ConfigCx, data: &MyItem) {
-        if !edit.has_edit_focus() {
-            edit.set_string(cx, data.1.to_string());
-        }
+    fn update(&mut self, edit: &mut Editor, cx: &mut ConfigCx, data: &MyItem) {
+        edit.set_string(cx, data.1.to_string());
     }
 
-    fn activate(edit: &mut EditField<Self>, cx: &mut EventCx, _: &MyItem) -> IsUsed {
-        cx.push(Control::Select(edit.guard.0));
+    fn activate(&mut self, _: &mut Editor, cx: &mut EventCx, _: &MyItem) -> IsUsed {
+        cx.push(Control::Select(self.0));
         Used
     }
 
-    fn edit(edit: &mut EditField<Self>, cx: &mut EventCx, _: &MyItem) {
-        cx.push(Control::Update(edit.guard.0, edit.clone_string()));
+    fn edit(&mut self, edit: &mut Editor, cx: &mut EventCx, _: &MyItem) {
+        cx.push(Control::Update(self.0, edit.clone_string()));
     }
 }
 ```
@@ -134,6 +132,8 @@ To use `ListEntry` as a view widget, we need a driver:
 ```rust
 struct ListEntryDriver;
 impl Driver<usize, MyItem> for ListEntryDriver {
+    const TAB_NAVIGABLE: bool = true;
+
     type Widget = ListEntry;
 
     fn make(&mut self, key: &usize) -> Self::Widget {
@@ -146,7 +146,7 @@ impl Driver<usize, MyItem> for ListEntryDriver {
                 move |_, data: &MyItem| data.0 == n,
                 move || Control::Select(n),
             ),
-            edit: EditBox::new(ListEntryGuard(n)).with_width_em(18.0, 30.0),
+            edit: EditBox::new(ListEntryGuard(n)),
         }
     }
 
@@ -167,58 +167,65 @@ Such an approach (directly representing each data entry with a widget) is scalab
 
 ### Data clerks
 
-To drive [`ListView`], we need an implementation of [`DataClerk`]. This is a low-level interface designed to support custom caching of data using batched `async` retrieval.
-
-For our toy example, we can use [`GeneratorClerk`], which provides a higher-level interface over the [`DataGenerator`] trait.
-
-We determined our view widget's input data type above: `type MyItem = (usize, String);` — our implementation just needs to generate values of this type on demand. (And since input data must be passed by a single reference, we cannot pass our data as `(usize, &str)` here. We could instead pass `(usize, Rc<Box<String>>)` to avoid deep-cloning `String`s, but in this little example there is no need.)
-
-### Data generators
-
-The [`DataGenerator`] trait is fairly simple to implement:
+To drive [`ListView`], we need a [clerk]. All clerks must implement [`Clerk`]:
 ```rust
 #[derive(Default)]
 struct Generator;
 
-// We implement for Index=usize, as required by ListView:
-impl DataGenerator<usize> for Generator {
+impl Clerk<usize> for Generator {
     type Data = MyData;
-    type Key = usize;
     type Item = MyItem;
 
-    fn update(&mut self, _: &Self::Data) -> GeneratorChanges<usize> {
+    fn len(&self, data: &Self::Data, lbound: usize) -> Len<usize> {
         todo!()
-    }
-
-    fn len(&self, data: &Self::Data, lbound: usize) -> DataLen<usize> {
-        todo!()
-    }
-
-    fn key(&self, _: &Self::Data, index: usize) -> Option<Self::Key> {
-        Some(index)
-    }
-
-    fn generate(&self, data: &Self::Data, key: &usize) -> Self::Item {
-        (data.active, data.get_string(*key))
     }
 }
 ```
 
-Returning [`GeneratorChanges::Any`] from fn [`DataGenerator::update`] is never wrong, yet it may cause unnecessary work. It turns out that we can simply calculate necessary updates in fn `MyData::handle`. (This assumes that `MyData::handle` will not be called multiple times before [`DataGenerator::update`].)
+### Data generators
 
-Before we amend `MyData`, we should look at fn [`DataGenerator::len`], which affects both the items our view controller might try to generate and the length of scroll bars. The return type is [`DataLen`] (with `Index=usize` in our case):
+We determined our view widget's input data type above: `type MyItem = (usize, String);`. Our implementation just needs to generate values of this type on demand. (And since input data must be passed by a single reference, we cannot pass our data as `(usize, &str)` here. We could instead pass `(usize, Rc<Box<String>>)` to avoid deep-cloning `String`s, but in this little example there is no need.)
+
+Thus, we can also implement [`IndexedGenerator`]:
 ```rust
-pub enum DataLen<Index> {
+# #[derive(Default)]
+# struct Generator;
+#
+# impl Clerk<usize> for Generator {
+#     type Data = MyData;
+#     type Item = MyItem;
+#
+#     fn len(&self, data: &Self::Data, lbound: usize) -> Len<usize> {
+#         todo!()
+#     }
+# }
+#
+impl IndexedGenerator<usize> for Generator {
+    fn update(&mut self, data: &Self::Data) -> GeneratorChanges<usize> {
+        todo!()
+    }
+
+    fn generate(&self, data: &Self::Data, index: usize) -> Self::Item {
+        (data.active, data.get_string(index))
+    }
+}
+```
+
+Returning [`GeneratorChanges::Any`] from fn [`IndexedGenerator::update`] is never wrong, yet it may cause unnecessary work. It turns out that we can simply calculate necessary updates in fn `MyData::handle`. (This assumes that `MyData::handle` will not be called multiple times before [`IndexedGenerator::update`].)
+
+Before we amend `MyData`, we should look at fn [`Clerk::len`], which affects both the items our view controller might try to generate and the length of scroll bars. The return type is [`Len`] (with `Index=usize` in our case):
+```rust
+pub enum Len<Index> {
     Known(Index),
     LBound(Index),
 }
 ```
 `MyData` does not have a limit on its data length (aside from `usize::MAX` and the amount of memory available to `HashMap`, both of which we shall ignore). We do have a known lower bound: the last (highest) key value used.
 
-At this point, we could decide that the highest addressible key is `data.last_key + 1` and therefore return `DataLen::Known(data.last_key + 2)`. Instead, we'd like to support unlimited scrolling (like in spreadsheets); following the recommendations on [`DataGenerator::len`] thus leads to the following implementation:
+At this point, we could decide that the highest addressible key is `data.last_key + 1` and therefore return `Len::Known(data.last_key + 2)`. Instead, we'd like to support unlimited scrolling (like in spreadsheets); following the recommendations on [`Clerk::len`] thus leads to the following implementation:
 ```rust
-    fn len(&self, data: &Self::Data, lbound: usize) -> DataLen<usize> {
-        DataLen::LBound((data.active.max(data.last_key + 1).max(lbound))
+    fn len(&self, data: &Self::Data, lbound: usize) -> Len<usize> {
+        Len::LBound((data.active.max(data.last_key + 1).max(lbound))
     }
 ```
 
@@ -244,7 +251,7 @@ impl MyData {
                 self.last_key = self.last_key.max(index);
                 self.strings.insert(index, text);
             }
-        };
+        }
     }
 }
 ```
@@ -256,13 +263,13 @@ Now we can write `fn main`:
 fn main() -> kas::runner::Result<()> {
     env_logger::init();
 
-    let clerk = GeneratorClerk::new(Generator::default());
+    let clerk = Generator::default();
     let list = ListView::down(clerk, ListEntryDriver);
     let tree = column![
         "Contents of selected entry:",
-        Text::new(|_, data: &MyData| data.get_string(data.active)),
+        Text::new_gen(|_, data: &MyData| data.get_string(data.active)),
         Separator::new(),
-        ScrollBars::new(list).with_fixed_bars(false, true),
+        ScrollRegion::new_viewport(list).with_fixed_bars(false, true),
     ];
 
     let ui = tree
@@ -275,21 +282,21 @@ fn main() -> kas::runner::Result<()> {
 }
 ```
 
-The [`ListView`] widget controls our view. We construct with direction `down`, a [`GeneratorClerk`] and our `ListEntryDriver`. Done.
+The [`ListView`] widget controls our view. We construct with direction `down`, a [`IndexedGenerator`] and our `ListEntryDriver`. Done.
 
 [Full code can be found here](https://github.com/kas-gui/tutorials/blob/master/examples/data-list-view.rs).
 
 [`EditBox`]: https://docs.rs/kas/latest/kas/widgets/struct.EditBox.html
 [`EditGuard`]: https://docs.rs/kas/latest/kas/widgets/trait.EditGuard.html
-[`GeneratorChanges::Any`]: https://docs.rs/kas/latest/kas/view/enum.GeneratorChanges.html#variant.Any
-[`DataGenerator`]: https://docs.rs/kas/latest/kas/view/trait.DataGenerator.html
-[`DataGenerator::update`]: https://docs.rs/kas/latest/kas/view/trait.DataGenerator.html#tymethod.update
-[`DataGenerator::len`]: https://docs.rs/kas/latest/kas/view/trait.DataGenerator.html#tymethod.len
-[`DataLen`]: https://docs.rs/kas/latest/kas/view/enum.DataLen.html
-[`DataLen::Known`]: https://docs.rs/kas/latest/kas/view/enum.DataLen.html
+[`GeneratorChanges::Any`]: https://docs.rs/kas/latest/kas/view/clerk/enum.GeneratorChanges.html#variant.Any
+[`IndexedGenerator`]: https://docs.rs/kas/latest/kas/view/clerk/trait.IndexedGenerator.html
+[`IndexedGenerator::update`]: https://docs.rs/kas/latest/kas/view/clerk/trait.IndexedGenerator.html#tymethod.update
+[`Len`]: https://docs.rs/kas/latest/kas/view/clerk/enum.Len.html
+[`Len::Known`]: https://docs.rs/kas/latest/kas/view/clerk/enum.Len.html
 [`ListView`]: https://docs.rs/kas/latest/kas/view/struct.ListView.html
-[`GeneratorClerk`]: https://docs.rs/kas/latest/kas/view/struct.GeneratorClerk.html
-[`DataClerk`]: https://docs.rs/kas/latest/kas/view/trait.DataClerk.html
+[clerk]: https://en.wiktionary.org/wiki/clerk
+[`Clerk`]: https://docs.rs/kas/latest/kas/view/clerk/trait.Clerk.html
+[`Clerk::len`]: https://docs.rs/kas/latest/kas/view/clerk/trait.Clerk.html#tymethod.len
 [`column!`]: https://docs.rs/kas/latest/kas/widgets/macro.column.html
 [Column]: https://docs.rs/kas/latest/kas/widgets/type.Column.html
 [`Collection`]: https://docs.rs/kas/latest/kas/trait.Collection.html
