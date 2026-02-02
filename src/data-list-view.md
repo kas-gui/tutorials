@@ -10,6 +10,7 @@ This tutorial will concern building a front-end to a very simple database.
 
 Context: we have a database consisting of a set of `String` values, keyed by sequentially-assigned (but not necessarily contiguous) `usize` numbers. One key is deemed active. In code:
 ```rust
+# use std::collections::HashMap;
 #[derive(Debug)]
 struct MyData {
     active: usize,
@@ -34,6 +35,7 @@ impl MyData {
 
 Our very simple database supports two mutating operations: selecting a new key to be active and replacing the string value at a given key:
 ```rust
+# use std::collections::HashMap;
 #[derive(Clone, Debug)]
 enum Control {
     Select(usize),
@@ -77,6 +79,10 @@ type MyItem = (usize, String); // (active index, entry's text)
 We choose to display the `String` value in an [`EditBox`], allowing direct editing of the value. To fine-tune behaviour of this [`EditBox`], we will implement a custom [`EditGuard`]:
 
 ```rust
+# use kas::event::{ConfigCx, EventCx, IsUsed, Used};
+# use kas::widgets::edit::{EditGuard, Editor};
+# type MyItem = (usize, String);
+# #[derive(Clone, Debug)] enum Control { Select(usize), Update(usize, String) }
 #[derive(Debug)]
 struct ListEntryGuard(usize);
 impl EditGuard for ListEntryGuard {
@@ -101,6 +107,11 @@ impl EditGuard for ListEntryGuard {
 
 The view widget itself is a custom widget:
 ```rust
+# use kas::{Events, impl_self};
+# use kas::widgets::{Label, RadioButton, EditBox, edit::EditGuard};
+# type MyItem = (usize, String);
+# struct ListEntryGuard;
+# impl EditGuard for ListEntryGuard { type Data = MyItem; }
 #[impl_self]
 mod ListEntry {
     // The list entry
@@ -130,6 +141,28 @@ mod ListEntry {
 
 To use `ListEntry` as a view widget, we need a driver:
 ```rust
+# use kas::view::Driver;
+# use kas::{Events, impl_self};
+# use kas::widgets::{Label, RadioButton, EditBox, edit::EditGuard};
+# #[derive(Clone, Debug)] enum Control { Select(usize), Update(usize, String) }
+# type MyItem = (usize, String);
+# struct ListEntryGuard(usize);
+# impl EditGuard for ListEntryGuard { type Data = MyItem; }
+# #[impl_self]
+# mod ListEntry {
+#     #[widget]
+#     #[layout(column! [row! [self.label, self.radio], self.edit])]
+#     struct ListEntry {
+#         core: widget_core!(),
+#         #[widget(&())]
+#         label: Label<String>,
+#         #[widget]
+#         radio: RadioButton<MyItem>,
+#         #[widget]
+#         edit: EditBox<ListEntryGuard>,
+#     }
+#     impl Events for Self { type Data = MyItem; }
+# }
 struct ListEntryDriver;
 impl Driver<usize, MyItem> for ListEntryDriver {
     const TAB_NAVIGABLE: bool = true;
@@ -169,6 +202,9 @@ Such an approach (directly representing each data entry with a widget) is scalab
 
 To drive [`ListView`], we need a [clerk]. All clerks must implement [`Clerk`]:
 ```rust
+# use kas::view::clerk::{Clerk, Len};
+# type MyItem = (usize, String);
+# type MyData = ();
 #[derive(Default)]
 struct Generator;
 
@@ -188,18 +224,16 @@ We determined our view widget's input data type above: `type MyItem = (usize, St
 
 Thus, we can also implement [`IndexedGenerator`]:
 ```rust
-# #[derive(Default)]
-# struct Generator;
-#
+# use kas::view::clerk::{Clerk, GeneratorChanges, IndexedGenerator, Len};
+# type MyItem = (usize, String);
+# struct MyData { active: usize }
+# impl MyData { fn get_string(&self, _: usize) -> String { todo!() } }
+# #[derive(Default)] struct Generator;
 # impl Clerk<usize> for Generator {
 #     type Data = MyData;
 #     type Item = MyItem;
-#
-#     fn len(&self, data: &Self::Data, lbound: usize) -> Len<usize> {
-#         todo!()
-#     }
+#     fn len(&self, data: &Self::Data, lbound: usize) -> Len<usize> { todo!() }
 # }
-#
 impl IndexedGenerator<usize> for Generator {
     fn update(&mut self, data: &Self::Data) -> GeneratorChanges<usize> {
         todo!()
@@ -224,13 +258,23 @@ pub enum Len<Index> {
 
 At this point, we could decide that the highest addressible key is `data.last_key + 1` and therefore return `Len::Known(data.last_key + 2)`. Instead, we'd like to support unlimited scrolling (like in spreadsheets); following the recommendations on [`Clerk::len`] thus leads to the following implementation:
 ```rust
+# use kas::view::clerk::{Clerk, Len};
+# struct MyData { active: usize, last_key: usize }
+# struct S;
+# impl Clerk<usize> for S {
+#     type Data = MyData;
+#     type Item = ();
     fn len(&self, data: &Self::Data, lbound: usize) -> Len<usize> {
-        Len::LBound((data.active.max(data.last_key + 1).max(lbound))
+        Len::LBound((data.active.max(data.last_key + 1).max(lbound)))
     }
+# }
 ```
 
 Right, lets update `MyData` with these additional capabilities:
 ```rust
+# use std::collections::HashMap;
+# use kas::view::clerk::GeneratorChanges;
+# #[derive(Clone, Debug)] enum Control { Select(usize), Update(usize, String) }
 #[derive(Debug)]
 struct MyData {
     last_change: GeneratorChanges<usize>,
@@ -260,6 +304,35 @@ impl MyData {
 
 Now we can write `fn main`:
 ```rust
+# use kas::widgets::{AdaptWidget, ScrollRegion, Separator, Text, column};
+# use kas::window::Window;
+# use kas::view::{Driver, ListView};
+# use kas::view::clerk::{Clerk, GeneratorChanges, IndexedGenerator, Len};
+# #[derive(Clone, Debug)] enum Control { Select(usize), Update(usize, String) }
+# struct MyData { active: usize }
+# impl MyData {
+#     fn new() -> Self { MyData { active: 0 } }
+#     fn get_string(&self, _: usize) -> String { "".to_string() }
+#     fn handle(&mut self, _: Control) { todo!() }
+# }
+# #[derive(Default)] struct Generator;
+# impl Clerk<usize> for Generator {
+#     type Data = MyData;
+#     type Item = MyItem;
+#     fn len(&self, data: &Self::Data, lbound: usize) -> Len<usize> { Len::Known(0) }
+# }
+# impl IndexedGenerator<usize> for Generator {
+#     fn update(&mut self, data: &Self::Data) -> GeneratorChanges<usize> { GeneratorChanges::None }
+#     fn generate(&self, data: &Self::Data, index: usize) -> Self::Item { todo!() }
+# }
+# type MyItem = (usize, String);
+# struct ListEntryDriver;
+# impl Driver<usize, MyItem> for ListEntryDriver {
+#     const TAB_NAVIGABLE: bool = true;
+#     type Widget = Text<(usize, String)>;
+#     fn make(&mut self, key: &usize) -> Self::Widget { Text::new_str(|_| "") }
+#     fn navigable(_: &Self::Widget) -> bool { false }
+# }
 fn main() -> kas::runner::Result<()> {
     env_logger::init();
 
