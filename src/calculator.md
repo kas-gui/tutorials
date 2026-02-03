@@ -5,7 +5,6 @@
 ![Calculator](screenshots/calculator.png)
 
 ```rust
-# extern crate kas;
 use std::num::ParseFloatError;
 use std::str::FromStr;
 
@@ -126,7 +125,6 @@ To make the calculator keyboard-accessible, we'll use *access keys* (see more on
 
 To make constructing buttons easier, we define some helper functions. (These facilitate defining the button *message* more than they do the *access keys*.)
 ```rust
-# extern crate kas;
 # use kas::text::AccessString;
 # use kas::widgets::{AccessLabel, Button};
 # type Key = kas::event::Key<kas::event::SmolStr>;
@@ -144,7 +142,6 @@ fn key_button_with(label: &str, key: Key) -> Button<AccessLabel> {
 
 Normally, access keys are only active while holding <kbd>Alt</kbd>. To avoid this requirement we call [`with_alt_bypass`]. Further, we disable <kbd>Tab</kbd> key navigation with [`without_nav_focus`] and ensure that the window can be closed with the <kbd>Esc</kbd> key.
 ```rust
-# extern crate kas;
 # use kas::{Widget, widgets::{Label, Adapt}, window::Window};
 # #[derive(Debug)]
 # struct Calculator;
@@ -166,7 +163,6 @@ Normally, access keys are only active while holding <kbd>Alt</kbd>. To avoid thi
 
 We already saw column and row layouts. This time, we'll use [`grid!`] for layout.
 ```rust
-# extern crate kas;
 # use kas::event::NamedKey;
 # use kas::prelude::*;
 # use kas::widgets::{AccessLabel, Button, Frame, grid};

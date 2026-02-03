@@ -26,7 +26,6 @@ Kas currently provides three theme implementations (along with one meta-implemen
 
 Previously we adjusted the font size before the UI was started:
 ```rust
-# extern crate kas;
 # use kas::prelude::*;
 # fn main() -> kas::runner::Result<()> {
     let theme = kas::theme::SimpleTheme::new();

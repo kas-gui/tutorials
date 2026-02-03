@@ -8,7 +8,6 @@
 We complicate the previous example just a little bit!
 
 ```rust
-# extern crate kas;
 use kas::widgets::{AdaptWidget, Button, Label, Slider, column, format_label, row};
 use kas::window::Window;
 
@@ -69,7 +68,6 @@ fn main() -> kas::runner::Result<()> {
 
 In the previous example, our top-level `AppData` was `()` and our mutable state was stored in an [`Adapt`] widget. This time, we will store our counter in top-level `AppData`, in a custom type which includes a message handler:
 ```rust
-# extern crate kas;
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
 
@@ -88,7 +86,6 @@ impl kas::runner::AppData for Count {
 
 To integrate this into our example, we pass a `Count` object into [`kas::runner::Builder::build`] and adjust the prototype of `counter` to:
 ```rust
-# extern crate kas;
 # #[derive(Clone, Copy, Debug)]
 # struct Count(i32);
 # impl kas::runner::AppData for Count {
@@ -116,7 +113,6 @@ Note that our local data includes a *copy* of the top-level data `Count` (along 
 
 We'll skip right over the widget declarations to the new [`Adapt`] node:
 ```rust
-# extern crate kas;
 # use kas::widgets::{Adapt, AdaptWidget, Label};
 # #[derive(Clone, Copy, Debug)]
 # struct Count(i32);
@@ -142,7 +138,6 @@ Aside aside: could we not make [`Widget::Data`] into a Generic Associated Type (
 
 Constructing multiple windows under a UI runner is simple:
 ```rust
-# extern crate kas;
 # use kas::window::Window;
 # #[derive(Clone, Copy, Debug)]
 # struct Count(i32);

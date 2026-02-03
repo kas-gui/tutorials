@@ -7,7 +7,6 @@
 The last example was a bit boring. Lets get interactive!
 
 ```rust
-# extern crate kas;
 use kas::prelude::*;
 use kas::widgets::{Button, column, format_label, row};
 
@@ -45,7 +44,6 @@ fn main() -> kas::runner::Result<()> {
 
 The [`kas::prelude`] includes a bunch of commonly-used, faily unambiguous stuff:
 ```rust
-# extern crate kas;
 use kas::prelude::*;
 ```
 
@@ -53,7 +51,6 @@ use kas::prelude::*;
 
 If you're new to Rust, you might find the following confusing:
 ```rust
-# extern crate kas;
 # use kas::prelude::*;
 fn counter() -> impl Widget<Data = ()> {
     // ...
@@ -76,7 +73,6 @@ In this example we'll only use library widgets and macro-synthesized widgets; [c
 
 Our user interface should be a widget tree: lets use a [`row!`] of buttons and a [`column!`] layout for the top-level UI tree:
 ```rust
-# extern crate kas;
 # use kas::prelude::*;
 # use kas::widgets::{Adapt, AdaptWidget, Button, column, format_label, row};
 # #[derive(Clone, Debug)]
@@ -118,7 +114,6 @@ In this case, we'll use `()` as our top-level data and an [`Adapt`] node for the
 
 The code:
 ```rust
-# extern crate kas;
 # use kas::prelude::*;
 # use kas::widgets::{format_label, Adapt};
 # #[derive(Clone, Debug)]
@@ -146,7 +141,6 @@ In practice, message handling has three steps:
 3.  Some widget above the sender in the UI tree retrieves the message using [`EventCx::try_pop`] and handles it somehow. [`Adapt::on_message`] provides a convenient way to write such a handler.
 
 ```rust
-# extern crate kas;
 # use kas::prelude::*;
 # use kas::widgets::{format_label, Adapt};
 # #[derive(Clone, Debug)]

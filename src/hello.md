@@ -8,7 +8,6 @@ Lets get started with a simple message box.
 [Source](https://github.com/kas-gui/tutorials/blob/master/examples/hello.rs).
 
 ```rust
-# extern crate kas;
 use kas::widgets::{Button, column};
 use kas::window::Window;
 
