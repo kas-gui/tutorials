@@ -5,19 +5,19 @@
 ![Calculator](screenshots/calculator.png)
 
 ```rust
-# extern crate kas;
 use std::num::ParseFloatError;
 use std::str::FromStr;
 
 use kas::event::NamedKey;
 use kas::prelude::*;
-use kas::widgets::{AccessLabel, Adapt, Button, EditBox, column, grid};
+use kas::theme::FrameStyle;
+use kas::widgets::{AccessLabel, Adapt, Button, EditBox, Frame, column, grid};
 
 type Key = kas::event::Key<kas::event::SmolStr>;
 
 fn key_button(label: &str) -> Button<AccessLabel> {
     let string = AccessString::from(label);
-    let key = string.key().unwrap().clone();
+    let key = string.key().unwrap().0.clone();
     Button::label_msg(string, key)
 }
 fn key_button_with(label: &str, key: Key) -> Button<AccessLabel> {
@@ -29,7 +29,8 @@ fn calc_ui() -> Window<()> {
     let display = EditBox::string(|calc: &Calculator| calc.display())
         .with_multi_line(true)
         .with_lines(3.0, 3.0)
-        .with_width_em(5.0, 10.0);
+        .with_width_em(5.0, 10.0)
+        .with_margin_style(kas::theme::MarginStyle::None);
 
     let buttons = grid! {
         // Key bindings: C, Del
@@ -44,18 +45,19 @@ fn calc_ui() -> Window<()> {
         (0, 1) => key_button("&7"),
         (1, 1) => key_button("&8"),
         (2, 1) => key_button("&9"),
-        (3, 1..3) => key_button("&+"),
+        (3, 1..=2) => key_button("&+"),
         (0, 2) => key_button("&4"),
         (1, 2) => key_button("&5"),
         (2, 2) => key_button("&6"),
         (0, 3) => key_button("&1"),
         (1, 3) => key_button("&2"),
         (2, 3) => key_button("&3"),
-        (3, 3..5) => key_button_with("&=", NamedKey::Enter.into()),
-        (0..2, 4) => key_button("&0"),
+        (3, 3..=4) => key_button_with("&=", NamedKey::Enter.into()),
+        (0..=1, 4) => key_button("&0"),
         (2, 4) => key_button("&."),
-    }
-    .map_any();
+    };
+    // We use map_any to avoid passing input data (not wanted by buttons):
+    let buttons = Frame::new(buttons).with_style(FrameStyle::None).map_any();
 
     let ui = Adapt::new(column![display, buttons], Calculator::new())
         .on_message(|_, calc, key| calc.handle(key));
@@ -123,7 +125,6 @@ To make the calculator keyboard-accessible, we'll use *access keys* (see more on
 
 To make constructing buttons easier, we define some helper functions. (These facilitate defining the button *message* more than they do the *access keys*.)
 ```rust
-# extern crate kas;
 # use kas::text::AccessString;
 # use kas::widgets::{AccessLabel, Button};
 # type Key = kas::event::Key<kas::event::SmolStr>;
@@ -141,7 +142,6 @@ fn key_button_with(label: &str, key: Key) -> Button<AccessLabel> {
 
 Normally, access keys are only active while holding <kbd>Alt</kbd>. To avoid this requirement we call [`with_alt_bypass`]. Further, we disable <kbd>Tab</kbd> key navigation with [`without_nav_focus`] and ensure that the window can be closed with the <kbd>Esc</kbd> key.
 ```rust
-# extern crate kas;
 # use kas::{Widget, widgets::{Label, Adapt}, window::Window};
 # #[derive(Debug)]
 # struct Calculator;
@@ -163,10 +163,10 @@ Normally, access keys are only active while holding <kbd>Alt</kbd>. To avoid thi
 
 We already saw column and row layouts. This time, we'll use [`grid!`] for layout.
 ```rust
-# extern crate kas;
 # use kas::event::NamedKey;
 # use kas::prelude::*;
-# use kas::widgets::{AccessLabel, Button, grid};
+# use kas::widgets::{AccessLabel, Button, Frame, grid};
+# use kas::theme::FrameStyle;
 # type Key = kas::event::Key<kas::event::SmolStr>;
 # fn key_button(label: &str) -> Button<AccessLabel> {
 #     let string = AccessString::from(label);
@@ -190,18 +190,19 @@ We already saw column and row layouts. This time, we'll use [`grid!`] for layout
         (0, 1) => key_button("&7"),
         (1, 1) => key_button("&8"),
         (2, 1) => key_button("&9"),
-        (3, 1..3) => key_button("&+"),
+        (3, 1..=2) => key_button("&+"),
         (0, 2) => key_button("&4"),
         (1, 2) => key_button("&5"),
         (2, 2) => key_button("&6"),
         (0, 3) => key_button("&1"),
         (1, 3) => key_button("&2"),
         (2, 3) => key_button("&3"),
-        (3, 3..5) => key_button_with("&=", NamedKey::Enter.into()),
-        (0..2, 4) => key_button("&0"),
+        (3, 3..=4) => key_button_with("&=", NamedKey::Enter.into()),
+        (0..=1, 4) => key_button("&0"),
         (2, 4) => key_button("&."),
-    }
-    .map_any();
+    };
+    // We use map_any to avoid passing input data (not wanted by buttons):
+    let buttons = Frame::new(buttons).with_style(FrameStyle::None).map_any();
 # buttons
 # }
 ```

@@ -19,7 +19,7 @@ series assumes a moderate understanding of the language.
 Kas supports **stable** Rust, however better proc-macro diagnostics (including warnings) are available when using **nightly** Rust with Kas's `nightly-diagnostics` feature.
 
 Tutorials use the latest stable release of [Kas](https://github.com/kas-gui/kas),
-currently v0.16.
+currently v0.17.
 
 ## Examples
 

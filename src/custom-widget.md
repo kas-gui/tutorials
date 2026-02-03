@@ -12,9 +12,8 @@ Custom widgets are essentially the hard way to do things, but they do have their
 Here we rewrite the counter as a custom widget. There's no reason to do so for this particular case, but it serves as a simple example to the topic.
 
 ```rust
-# extern crate kas;
 use kas::prelude::*;
-use kas::widgets::{AccessLabel, Button, Row, Text, format_value};
+use kas::widgets::{AccessLabel, Button, Row, Text, format_label};
 
 #[derive(Clone, Debug)]
 struct Increment(i32);
@@ -38,7 +37,7 @@ mod Counter {
         fn new(count: i32) -> Self {
             Counter {
                 core: Default::default(),
-                display: format_value!("{}"),
+                display: format_label!("{}"),
                 buttons: Row::new([
                     Button::label_msg("-", Increment(-1)),
                     Button::label_msg("+", Increment(1)),
@@ -155,7 +154,6 @@ In this case, we are *not* using the [`column!`] macro (which would not be able 
 
 It is however required to define the associated type [`Widget::Data`]. Since it is common to implement [`Events`] instead of [`Widget`] and `trait Events: Widget`, the `#[widget]` macro allows you to take the liberty of defining `type Data` on `Events` instead of `Widget`:
 ```rust
-# extern crate kas;
 # use kas::prelude::*;
 # #[derive(Clone, Debug)]
 # struct Increment(i32);
